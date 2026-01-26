@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import net.damian.tablethub.data.local.entity.AlarmEntity
 import net.damian.tablethub.data.repository.AlarmRepository
+import net.damian.tablethub.service.alarm.AlarmScheduler
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
@@ -19,7 +20,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ClockViewModel @Inject constructor(
-    private val alarmRepository: AlarmRepository
+    private val alarmRepository: AlarmRepository,
+    private val alarmScheduler: AlarmScheduler
 ) : ViewModel() {
 
     val alarms: StateFlow<List<AlarmEntity>> = alarmRepository.getAllAlarms()
@@ -56,24 +58,31 @@ class ClockViewModel @Inject constructor(
 
     fun saveAlarm(alarm: AlarmEntity) {
         viewModelScope.launch {
-            if (alarm.id == 0L) {
-                alarmRepository.insertAlarm(alarm)
+            val savedAlarm = if (alarm.id == 0L) {
+                val newId = alarmRepository.insertAlarm(alarm)
+                alarm.copy(id = newId)
             } else {
                 alarmRepository.updateAlarm(alarm)
+                alarm
             }
+            alarmScheduler.scheduleAlarm(savedAlarm)
             dismissEditor()
         }
     }
 
     fun deleteAlarm(alarm: AlarmEntity) {
         viewModelScope.launch {
+            alarmScheduler.cancelAlarm(alarm)
             alarmRepository.deleteAlarm(alarm)
         }
     }
 
     fun toggleAlarmEnabled(alarm: AlarmEntity) {
         viewModelScope.launch {
-            alarmRepository.setAlarmEnabled(alarm.id, !alarm.enabled)
+            val newEnabled = !alarm.enabled
+            alarmRepository.setAlarmEnabled(alarm.id, newEnabled)
+            val updatedAlarm = alarm.copy(enabled = newEnabled)
+            alarmScheduler.scheduleAlarm(updatedAlarm)
         }
     }
 

@@ -43,6 +43,32 @@
             </intent-filter>
         </activity>
 
+        <!-- Alarm firing full-screen activity -->
+        <activity
+            android:name=".AlarmFiringActivity"
+            android:exported="false"
+            android:showOnLockScreen="true"
+            android:turnScreenOn="true"
+            android:theme="@style/Theme.TabletHub" />
+
+        <!-- Alarm foreground service -->
+        <service
+            android:name=".service.alarm.AlarmService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
+        <!-- Alarm broadcast receiver -->
+        <receiver
+            android:name=".service.alarm.AlarmReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="net.damian.tablethub.ACTION_ALARM_FIRED" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
     </application>
 
 </manifest>
