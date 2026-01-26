@@ -14,6 +14,7 @@
     <!-- Foreground service permissions -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- System permissions -->
@@ -56,6 +57,12 @@
             android:name=".service.alarm.AlarmService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
+
+        <!-- MQTT foreground service -->
+        <service
+            android:name=".service.mqtt.MqttService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
 
         <!-- Alarm broadcast receiver -->
         <receiver
