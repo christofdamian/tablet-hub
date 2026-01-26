@@ -9,8 +9,8 @@ import com.squareup.moshi.JsonClass
 data class PlexPinResponse(
     val id: Long,
     val code: String,
-    @Json(name = "auth_token") val authToken: String?,
-    @Json(name = "expires_at") val expiresAt: String?
+    val authToken: String?,
+    val expiresAt: String?
 )
 
 @JsonClass(generateAdapter = true)

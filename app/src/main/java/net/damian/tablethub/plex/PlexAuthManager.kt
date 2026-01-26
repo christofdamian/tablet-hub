@@ -136,13 +136,18 @@ class PlexAuthManager @Inject constructor(
         while (System.currentTimeMillis() - startTime < PIN_CHECK_TIMEOUT_MS) {
             try {
                 val response = plexAuthApi.checkPin(state.pinId, clientId)
+                Log.d(TAG, "PIN check response: ${response.code()}")
                 if (response.isSuccessful) {
                     val pin = response.body()
+                    Log.d(TAG, "PIN response body: id=${pin?.id}, code=${pin?.code}, authToken=${pin?.authToken?.take(10)}...")
                     if (pin?.authToken != null) {
                         // PIN was claimed, we have a token
+                        Log.d(TAG, "PIN claimed! Got auth token")
                         saveAuthToken(pin.authToken)
                         return fetchUserAndServers(pin.authToken)
                     }
+                } else {
+                    Log.w(TAG, "PIN check failed: ${response.errorBody()?.string()}")
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error checking PIN", e)
