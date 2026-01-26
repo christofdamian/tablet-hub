@@ -25,7 +25,7 @@ interface PlexAuthApi {
     @FormUrlEncoded
     @POST("pins")
     suspend fun requestPin(
-        @Field("strong") strong: Boolean = true,
+        @Field("strong") strong: Boolean = false,
         @Header("X-Plex-Product") product: String = "TabletHub",
         @Header("X-Plex-Client-Identifier") clientId: String,
         @Header("Accept") accept: String = "application/json"
