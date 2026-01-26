@@ -176,10 +176,16 @@ class PlexAuthManager @Inject constructor(
 
             // Get available servers
             val resourcesResponse = plexAuthApi.getResources(token)
-            val resources = resourcesResponse.body()
-            val servers = resources?.mediaContainer?.devices?.filter {
+            val allDevices = resourcesResponse.body() ?: emptyList()
+            Log.d(TAG, "Found ${allDevices.size} devices")
+            allDevices.forEach { device ->
+                Log.d(TAG, "Device: ${device.name}, provides: ${device.provides}")
+            }
+
+            val servers = allDevices.filter {
                 it.provides?.contains("server") == true
-            } ?: emptyList()
+            }
+            Log.d(TAG, "Found ${servers.size} servers")
 
             if (servers.isEmpty()) {
                 _authState.value = PlexAuthState.Error("No Plex servers found")

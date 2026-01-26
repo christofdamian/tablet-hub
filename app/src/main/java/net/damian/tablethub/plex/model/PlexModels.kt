@@ -34,13 +34,13 @@ data class PlexResourcesContainer(
 
 @JsonClass(generateAdapter = true)
 data class PlexDevice(
-    val name: String,
-    val product: String,
-    val productVersion: String?,
-    val platform: String?,
-    val clientIdentifier: String,
-    val provides: String?, // "server", "client", etc.
-    @Json(name = "Connection") val connections: List<PlexConnection>?
+    val name: String = "",
+    val product: String = "",
+    val productVersion: String? = null,
+    val platform: String? = null,
+    val clientIdentifier: String = "",
+    val provides: String? = null, // "server", "client", etc.
+    val connections: List<PlexConnection>? = null
 )
 
 @JsonClass(generateAdapter = true)

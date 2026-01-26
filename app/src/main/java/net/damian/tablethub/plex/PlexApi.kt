@@ -1,8 +1,8 @@
 package net.damian.tablethub.plex
 
+import net.damian.tablethub.plex.model.PlexDevice
 import net.damian.tablethub.plex.model.PlexMediaContainer
 import net.damian.tablethub.plex.model.PlexPinResponse
-import net.damian.tablethub.plex.model.PlexResourcesResponse
 import net.damian.tablethub.plex.model.PlexUser
 import retrofit2.Response
 import retrofit2.http.Field
@@ -59,7 +59,7 @@ interface PlexAuthApi {
         @Header("X-Plex-Token") token: String,
         @Query("includeHttps") includeHttps: Int = 1,
         @Header("Accept") accept: String = "application/json"
-    ): Response<PlexResourcesResponse>
+    ): Response<List<PlexDevice>>
 }
 
 /**
