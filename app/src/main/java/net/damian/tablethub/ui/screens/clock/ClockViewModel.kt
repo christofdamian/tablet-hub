@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 import net.damian.tablethub.data.local.entity.AlarmEntity
 import net.damian.tablethub.data.repository.AlarmRepository
 import net.damian.tablethub.service.alarm.AlarmScheduler
+import net.damian.tablethub.service.mqtt.HaStatePublisher
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
@@ -21,7 +22,8 @@ import javax.inject.Inject
 @HiltViewModel
 class ClockViewModel @Inject constructor(
     private val alarmRepository: AlarmRepository,
-    private val alarmScheduler: AlarmScheduler
+    private val alarmScheduler: AlarmScheduler,
+    private val haStatePublisher: HaStatePublisher
 ) : ViewModel() {
 
     val alarms: StateFlow<List<AlarmEntity>> = alarmRepository.getAllAlarms()
@@ -30,6 +32,25 @@ class ClockViewModel @Inject constructor(
     val nextAlarmText: StateFlow<String?> = alarmRepository.getEnabledAlarms()
         .map { alarms -> calculateNextAlarm(alarms) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    init {
+        // Observe alarms and publish state updates to HA
+        viewModelScope.launch {
+            alarms.collect { alarmList ->
+                haStatePublisher.updateAlarms(alarmList)
+            }
+        }
+        viewModelScope.launch {
+            alarmRepository.getEnabledAlarms().collect { enabledAlarms ->
+                val nextAlarmInfo = calculateNextAlarmInfo(enabledAlarms)
+                haStatePublisher.updateNextAlarm(
+                    alarmTime = nextAlarmInfo?.first?.getTimeString(),
+                    alarmLabel = nextAlarmInfo?.first?.label,
+                    alarmId = nextAlarmInfo?.first?.id
+                )
+            }
+        }
+    }
 
     private val _editingAlarm = MutableStateFlow<AlarmEntity?>(null)
     val editingAlarm: StateFlow<AlarmEntity?> = _editingAlarm.asStateFlow()
@@ -86,7 +107,7 @@ class ClockViewModel @Inject constructor(
         }
     }
 
-    private fun calculateNextAlarm(alarms: List<AlarmEntity>): String? {
+    private fun calculateNextAlarmInfo(alarms: List<AlarmEntity>): Pair<AlarmEntity, Int>? {
         if (alarms.isEmpty()) return null
 
         val now = LocalTime.now()
@@ -99,21 +120,19 @@ class ClockViewModel @Inject constructor(
             val alarmTime = LocalTime.of(alarm.hour, alarm.minute)
 
             if (!alarm.isRepeating) {
-                // One-time alarm: fires today if in future, otherwise tomorrow
                 val daysUntil = if (alarmTime.isAfter(now)) 0 else 1
                 listOf(AlarmCandidate(alarm, daysUntil))
             } else {
-                // Repeating alarm: find next active day
                 (0..6).mapNotNull { dayOffset ->
                     val targetDay = currentDayOfWeek.plus(dayOffset.toLong())
-                    val dayIndex = (targetDay.value - 1) // Monday = 0
+                    val dayIndex = (targetDay.value - 1)
                     val isActive = alarm.activeDays[dayIndex]
 
                     if (isActive) {
                         val daysUntil = if (dayOffset == 0 && alarmTime.isAfter(now)) {
                             0
                         } else if (dayOffset == 0) {
-                            7 // Same day but time passed, next week
+                            7
                         } else {
                             dayOffset
                         }
@@ -128,8 +147,16 @@ class ClockViewModel @Inject constructor(
             candidate.daysUntil * 24 * 60 + alarmTime.hour * 60 + alarmTime.minute
         } ?: return null
 
-        val nextAlarm = nextCandidate.alarm
-        val daysUntil = nextCandidate.daysUntil
+        return Pair(nextCandidate.alarm, nextCandidate.daysUntil)
+    }
+
+    private fun calculateNextAlarm(alarms: List<AlarmEntity>): String? {
+        val nextAlarmInfo = calculateNextAlarmInfo(alarms) ?: return null
+        val nextAlarm = nextAlarmInfo.first
+        val daysUntil = nextAlarmInfo.second
+
+        val today = LocalDate.now()
+        val currentDayOfWeek = today.dayOfWeek
 
         val dayText = when (daysUntil) {
             0 -> "Today"

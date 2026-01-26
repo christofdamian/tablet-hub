@@ -33,14 +33,15 @@ class SettingsDataStore @Inject constructor(
     private val deviceIdKey = stringPreferencesKey("device_id")
     private val deviceNameKey = stringPreferencesKey("device_name")
 
+    // TODO: Remove hardcoded values and use settings UI
     val mqttConfig: Flow<MqttConfig> = context.dataStore.data.map { preferences ->
         MqttConfig(
-            host = preferences[mqttHostKey] ?: "",
+            host = preferences[mqttHostKey] ?: "homeassistant.lan",
             port = preferences[mqttPortKey] ?: 1883,
-            username = preferences[mqttUsernameKey] ?: "",
-            password = preferences[mqttPasswordKey] ?: "",
-            clientId = preferences[mqttClientIdKey] ?: "tablethub_${System.currentTimeMillis()}",
-            enabled = preferences[mqttEnabledKey] ?: false,
+            username = preferences[mqttUsernameKey] ?: "tablethub",
+            password = preferences[mqttPasswordKey] ?: "yourpassword",
+            clientId = preferences[mqttClientIdKey] ?: "tablethub_android",
+            enabled = preferences[mqttEnabledKey] ?: true,
             useTls = preferences[mqttUseTlsKey] ?: false
         )
     }

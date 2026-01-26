@@ -46,4 +46,12 @@ data class AlarmEntity(
     fun getTimeString(): String {
         return "%02d:%02d".format(hour, minute)
     }
+
+    fun getDaysString(): String {
+        if (!isRepeating) return ""
+        val days = listOf("M", "T", "W", "T", "F", "S", "S")
+        return activeDays.mapIndexedNotNull { index, active ->
+            if (active) days[index] else "-"
+        }.joinToString("")
+    }
 }

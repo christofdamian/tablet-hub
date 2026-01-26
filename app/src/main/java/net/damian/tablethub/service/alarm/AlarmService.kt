@@ -16,13 +16,21 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.core.app.NotificationCompat
+import dagger.hilt.android.AndroidEntryPoint
 import net.damian.tablethub.AlarmFiringActivity
 import net.damian.tablethub.R
+import net.damian.tablethub.service.mqtt.HaStatePublisher
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class AlarmService : Service() {
+
+    @Inject
+    lateinit var haStatePublisher: HaStatePublisher
 
     private var mediaPlayer: MediaPlayer? = null
     private var vibrator: Vibrator? = null
+    private var currentAlarmId: Long = -1
 
     override fun onCreate() {
         super.onCreate()
@@ -34,15 +42,20 @@ class AlarmService : Service() {
             ACTION_START_ALARM -> {
                 val alarmId = intent.getLongExtra(AlarmReceiver.EXTRA_ALARM_ID, -1)
                 val alarmLabel = intent.getStringExtra(AlarmReceiver.EXTRA_ALARM_LABEL) ?: ""
+                currentAlarmId = alarmId
 
                 startForeground(NOTIFICATION_ID, createNotification(alarmLabel))
                 startAlarmSound()
                 startVibration()
                 launchAlarmActivity(alarmId, alarmLabel)
+
+                // Publish alarm ringing state to HA
+                haStatePublisher.updateAlarmRinging(true, alarmId)
             }
 
             ACTION_STOP_ALARM -> {
                 stopAlarm()
+                haStatePublisher.updateAlarmRinging(false)
                 stopSelf()
             }
 
@@ -50,6 +63,7 @@ class AlarmService : Service() {
                 val alarmId = intent.getLongExtra(AlarmReceiver.EXTRA_ALARM_ID, -1)
                 snoozeAlarm(alarmId)
                 stopAlarm()
+                haStatePublisher.updateAlarmRinging(false)
                 stopSelf()
             }
         }
