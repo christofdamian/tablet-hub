@@ -57,7 +57,9 @@ interface PlexAuthApi {
     @GET("resources")
     suspend fun getResources(
         @Header("X-Plex-Token") token: String,
+        @Header("X-Plex-Client-Identifier") clientId: String,
         @Query("includeHttps") includeHttps: Int = 1,
+        @Query("includeRelay") includeRelay: Int = 1,
         @Header("Accept") accept: String = "application/json"
     ): Response<List<PlexDevice>>
 }

@@ -175,7 +175,11 @@ class PlexAuthManager @Inject constructor(
             saveUsername(user.username)
 
             // Get available servers
-            val resourcesResponse = plexAuthApi.getResources(token)
+            val resourcesResponse = plexAuthApi.getResources(token, clientId)
+            Log.d(TAG, "Resources response code: ${resourcesResponse.code()}")
+            if (!resourcesResponse.isSuccessful) {
+                Log.e(TAG, "Resources error: ${resourcesResponse.errorBody()?.string()}")
+            }
             val allDevices = resourcesResponse.body() ?: emptyList()
             Log.d(TAG, "Found ${allDevices.size} devices")
             allDevices.forEach { device ->
