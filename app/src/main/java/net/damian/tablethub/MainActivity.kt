@@ -10,6 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import dagger.hilt.android.AndroidEntryPoint
+import net.damian.tablethub.service.display.ScreenManager
 import net.damian.tablethub.service.mqtt.MqttService
 import net.damian.tablethub.ui.navigation.AppNavigation
 import net.damian.tablethub.ui.theme.TabletHubTheme
@@ -19,6 +20,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // Set up screen manager
+        ScreenManager.setActivity(this)
 
         // Start MQTT service
         MqttService.start(this)
@@ -35,5 +39,10 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onDestroy() {
+        ScreenManager.clearActivity()
+        super.onDestroy()
     }
 }
