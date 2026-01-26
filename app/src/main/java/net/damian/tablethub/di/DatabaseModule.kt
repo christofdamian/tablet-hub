@@ -9,6 +9,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import net.damian.tablethub.data.local.AppDatabase
 import net.damian.tablethub.data.local.dao.AlarmDao
+import net.damian.tablethub.data.local.dao.ButtonDao
 import javax.inject.Singleton
 
 @Module
@@ -22,11 +23,18 @@ object DatabaseModule {
             context,
             AppDatabase::class.java,
             "tablethub.db"
-        ).build()
+        )
+            .fallbackToDestructiveMigration() // TODO: Add proper migrations for production
+            .build()
     }
 
     @Provides
     fun provideAlarmDao(database: AppDatabase): AlarmDao {
         return database.alarmDao()
+    }
+
+    @Provides
+    fun provideButtonDao(database: AppDatabase): ButtonDao {
+        return database.buttonDao()
     }
 }
