@@ -10,6 +10,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import dagger.hilt.android.AndroidEntryPoint
 import net.damian.tablethub.service.display.LightSensorService
@@ -18,6 +21,7 @@ import net.damian.tablethub.service.display.ScreenManager
 import net.damian.tablethub.service.mqtt.MqttService
 import net.damian.tablethub.ui.navigation.AppNavigation
 import net.damian.tablethub.ui.screens.clock.NightClockDisplay
+import net.damian.tablethub.ui.screens.settings.SettingsScreen
 import net.damian.tablethub.ui.theme.TabletHubTheme
 import javax.inject.Inject
 
@@ -45,9 +49,15 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val nightModeState by nightModeManager.nightModeState.collectAsState()
+            var showSettings by remember { mutableStateOf(false) }
 
             TabletHubTheme(nightMode = nightModeState.isActive) {
-                if (nightModeState.isActive) {
+                if (showSettings) {
+                    // Show settings screen
+                    SettingsScreen(
+                        onDismiss = { showSettings = false }
+                    )
+                } else if (nightModeState.isActive) {
                     // Show minimal night clock display
                     NightClockDisplay(
                         onTap = { nightModeManager.toggleNightMode() }
@@ -61,7 +71,8 @@ class MainActivity : ComponentActivity() {
                         AppNavigation(
                             modifier = Modifier.padding(innerPadding),
                             isNightModeActive = nightModeState.isActive,
-                            onNightModeToggle = { nightModeManager.toggleNightMode() }
+                            onNightModeToggle = { nightModeManager.toggleNightMode() },
+                            onSettingsClick = { showSettings = true }
                         )
                     }
                 }

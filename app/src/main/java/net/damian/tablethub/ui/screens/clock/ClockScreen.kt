@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Brightness2
 import androidx.compose.material.icons.filled.Brightness7
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,6 +33,7 @@ fun ClockScreen(
     modifier: Modifier = Modifier,
     isNightModeActive: Boolean = false,
     onNightModeToggle: () -> Unit = {},
+    onSettingsClick: () -> Unit = {},
     viewModel: ClockViewModel = hiltViewModel()
 ) {
     val alarms by viewModel.alarms.collectAsState()
@@ -56,6 +58,20 @@ fun ClockScreen(
             NextAlarmDisplay(
                 nextAlarmText = nextAlarmText,
                 modifier = Modifier.padding(top = 32.dp)
+            )
+        }
+
+        // Settings button (top-left)
+        IconButton(
+            onClick = onSettingsClick,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(top = 48.dp, start = 16.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Settings,
+                contentDescription = "Settings",
+                tint = MaterialTheme.colorScheme.onSurface
             )
         }
 

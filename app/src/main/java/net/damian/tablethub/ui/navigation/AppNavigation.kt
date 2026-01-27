@@ -24,7 +24,8 @@ enum class Screen {
 fun AppNavigation(
     modifier: Modifier = Modifier,
     isNightModeActive: Boolean = false,
-    onNightModeToggle: () -> Unit = {}
+    onNightModeToggle: () -> Unit = {},
+    onSettingsClick: () -> Unit = {}
 ) {
     val screens = Screen.entries
     val pagerState = rememberPagerState(
@@ -40,7 +41,8 @@ fun AppNavigation(
             when (screens[page]) {
                 Screen.Clock -> ClockScreen(
                     isNightModeActive = isNightModeActive,
-                    onNightModeToggle = onNightModeToggle
+                    onNightModeToggle = onNightModeToggle,
+                    onSettingsClick = onSettingsClick
                 )
                 Screen.Buttons -> ButtonsScreen()
                 Screen.Player -> PlayerScreen()
