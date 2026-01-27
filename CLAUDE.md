@@ -49,6 +49,9 @@ The app registers as an HA device via MQTT discovery, exposing:
 - `light.tablethub_brightness`
 - `sensor.tablethub_battery`
 
+**MQTT Events:**
+- `tablethub/{device_id}/event` - Pre-alarm events for HA automations (sunrise lights, etc.)
+
 ## Project Structure
 
 ```
