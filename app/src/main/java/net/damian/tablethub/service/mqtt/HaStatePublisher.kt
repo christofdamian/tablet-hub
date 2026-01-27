@@ -38,6 +38,7 @@ class HaStatePublisher @Inject constructor(
 
     private var deviceId: String = "tablethub"
     private val stateTopic: String get() = "tablethub/$deviceId/state"
+    private val eventTopic: String get() = "tablethub/$deviceId/event"
 
     // Current state
     private val currentState = MutableStateFlow(TabletHubState())
@@ -167,6 +168,33 @@ class HaStatePublisher @Inject constructor(
     }
 
     /**
+     * Publish pre-alarm event for Home Assistant automations.
+     * This is published as a separate event (not retained) to the event topic.
+     */
+    fun publishPreAlarmEvent(alarmId: Long, alarmTime: String, alarmLabel: String, minutesUntil: Int) {
+        scope.launch {
+            try {
+                deviceId = settingsDataStore.deviceId.first()
+                val event = PreAlarmEvent(
+                    eventType = "tablethub_pre_alarm",
+                    alarmId = alarmId.toString(),
+                    alarmTime = alarmTime,
+                    alarmLabel = alarmLabel,
+                    minutesUntil = minutesUntil
+                )
+                val adapter = moshi.adapter(PreAlarmEvent::class.java)
+                val json = adapter.toJson(event)
+
+                // Publish event (not retained - events are transient)
+                mqttManager.publish(eventTopic, json, qos = 1, retained = false)
+                Log.d(TAG, "Published pre-alarm event: $json")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to publish pre-alarm event", e)
+            }
+        }
+    }
+
+    /**
      * Force refresh all state values and publish.
      */
     fun refreshAndPublish() {
@@ -204,4 +232,16 @@ data class AlarmState(
     val time: String,
     val label: String,
     val days: String
+)
+
+/**
+ * Pre-alarm event published to MQTT for HA automations.
+ */
+@com.squareup.moshi.JsonClass(generateAdapter = true)
+data class PreAlarmEvent(
+    @com.squareup.moshi.Json(name = "event_type") val eventType: String,
+    @com.squareup.moshi.Json(name = "alarm_id") val alarmId: String,
+    @com.squareup.moshi.Json(name = "alarm_time") val alarmTime: String,
+    @com.squareup.moshi.Json(name = "alarm_label") val alarmLabel: String,
+    @com.squareup.moshi.Json(name = "minutes_until") val minutesUntil: Int
 )
