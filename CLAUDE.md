@@ -4,6 +4,7 @@
 
 - Always commit major changes
 - Do not include yourself (Co-Authored-By) in commit messages
+- Always write a test when fixing a bug
 
 ## Project Overview
 
