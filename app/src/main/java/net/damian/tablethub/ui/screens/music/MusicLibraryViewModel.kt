@@ -1,15 +1,24 @@
 package net.damian.tablethub.ui.screens.music
 
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import net.damian.tablethub.plex.PlexRepository
 import net.damian.tablethub.plex.model.PlexDirectory
 import net.damian.tablethub.plex.model.PlexMetadata
+import net.damian.tablethub.service.music.MusicPlaybackService
+import net.damian.tablethub.service.music.PlaybackManager
+import net.damian.tablethub.service.music.PlaybackState
 import javax.inject.Inject
 
 data class MusicLibraryState(
@@ -32,7 +41,9 @@ enum class MusicTab {
 
 @HiltViewModel
 class MusicLibraryViewModel @Inject constructor(
-    private val plexRepository: PlexRepository
+    @ApplicationContext private val context: Context,
+    private val plexRepository: PlexRepository,
+    private val playbackManager: PlaybackManager
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(MusicLibraryState())
@@ -41,8 +52,22 @@ class MusicLibraryViewModel @Inject constructor(
     private val _selectedTab = MutableStateFlow(MusicTab.Artists)
     val selectedTab: StateFlow<MusicTab> = _selectedTab.asStateFlow()
 
+    val playbackState: StateFlow<PlaybackState> = playbackManager.playbackState
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = PlaybackState()
+        )
+
     init {
         loadMusicLibraries()
+        startMusicService()
+    }
+
+    private fun startMusicService() {
+        val intent = Intent(context, MusicPlaybackService::class.java)
+        context.startService(intent)
+        playbackManager.connectToService()
     }
 
     fun selectTab(tab: MusicTab) {
@@ -209,8 +234,29 @@ class MusicLibraryViewModel @Inject constructor(
         return plexRepository.getArtworkUrl(thumb)
     }
 
-    fun getStreamUrl(track: PlexMetadata): String? {
-        val partKey = track.media?.firstOrNull()?.parts?.firstOrNull()?.key ?: return null
-        return plexRepository.getStreamUrl(partKey)
+    // Playback controls
+    fun playTrack(track: PlexMetadata) {
+        val queue = _state.value.tracks.ifEmpty { listOf(track) }
+        playbackManager.playQueue(queue, queue.indexOf(track).coerceAtLeast(0))
+    }
+
+    fun playPause() {
+        playbackManager.togglePlayPause()
+    }
+
+    fun skipNext() {
+        playbackManager.skipToNext()
+    }
+
+    fun skipPrevious() {
+        playbackManager.skipToPrevious()
+    }
+
+    fun getCurrentPosition(): Long {
+        return playbackManager.getCurrentPosition()
+    }
+
+    fun getDuration(): Long {
+        return playbackManager.getDuration()
     }
 }

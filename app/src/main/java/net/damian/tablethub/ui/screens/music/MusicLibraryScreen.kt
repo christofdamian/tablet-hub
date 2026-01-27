@@ -52,6 +52,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import net.damian.tablethub.plex.model.PlexMetadata
+import net.damian.tablethub.ui.components.NowPlayingBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,6 +63,7 @@ fun MusicLibraryScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val selectedTab by viewModel.selectedTab.collectAsStateWithLifecycle()
+    val playbackState by viewModel.playbackState.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Top bar with back navigation when in detail views
@@ -112,7 +114,8 @@ fun MusicLibraryScreen(
         // Content
         Box(
             modifier = Modifier
-                .fillMaxSize()
+                .weight(1f)
+                .fillMaxWidth()
                 .padding(horizontal = 16.dp)
         ) {
             when {
@@ -133,7 +136,7 @@ fun MusicLibraryScreen(
                 state.selectedAlbum != null -> {
                     TrackList(
                         tracks = state.tracks,
-                        onTrackClick = onTrackSelected,
+                        onTrackClick = { viewModel.playTrack(it) },
                         getArtworkUrl = { viewModel.getArtworkUrl(it) }
                     )
                 }
@@ -182,6 +185,20 @@ fun MusicLibraryScreen(
                     }
                 }
             }
+        }
+
+        // Now Playing Bar
+        if (playbackState.currentTrack != null) {
+            NowPlayingBar(
+                playbackState = playbackState,
+                artworkUrl = viewModel.getArtworkUrl(playbackState.currentTrack?.thumb),
+                onPlayPause = { viewModel.playPause() },
+                onNext = { viewModel.skipNext() },
+                onPrevious = { viewModel.skipPrevious() },
+                getCurrentPosition = { viewModel.getCurrentPosition() },
+                getDuration = { viewModel.getDuration() },
+                onClick = { /* TODO: Open full player */ }
+            )
         }
     }
 }
