@@ -34,6 +34,7 @@ class AlarmScheduler @Inject constructor(
             action = AlarmReceiver.ACTION_ALARM_FIRED
             putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarm.id)
             putExtra(AlarmReceiver.EXTRA_ALARM_LABEL, alarm.label)
+            alarm.plexPlaylistId?.let { putExtra(AlarmReceiver.EXTRA_PLEX_PLAYLIST_ID, it) }
         }
 
         val pendingIntent = PendingIntent.getBroadcast(

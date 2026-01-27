@@ -12,12 +12,14 @@ class AlarmReceiver : BroadcastReceiver() {
             ACTION_ALARM_FIRED -> {
                 val alarmId = intent.getLongExtra(EXTRA_ALARM_ID, -1)
                 val alarmLabel = intent.getStringExtra(EXTRA_ALARM_LABEL) ?: ""
+                val plexPlaylistId = intent.getStringExtra(EXTRA_PLEX_PLAYLIST_ID)
 
                 // Start the alarm service
                 val serviceIntent = Intent(context, AlarmService::class.java).apply {
                     action = AlarmService.ACTION_START_ALARM
                     putExtra(EXTRA_ALARM_ID, alarmId)
                     putExtra(EXTRA_ALARM_LABEL, alarmLabel)
+                    plexPlaylistId?.let { putExtra(AlarmService.EXTRA_PLEX_PLAYLIST_ID, it) }
                 }
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -38,5 +40,6 @@ class AlarmReceiver : BroadcastReceiver() {
         const val ACTION_ALARM_FIRED = "net.damian.tablethub.ACTION_ALARM_FIRED"
         const val EXTRA_ALARM_ID = "extra_alarm_id"
         const val EXTRA_ALARM_LABEL = "extra_alarm_label"
+        const val EXTRA_PLEX_PLAYLIST_ID = "extra_plex_playlist_id"
     }
 }

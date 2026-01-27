@@ -19,8 +19,13 @@ data class AlarmEntity(
     val saturday: Boolean = false,
     val sunday: Boolean = false,
     val preAlarmMinutes: Int = 15,
-    val snoozeDurationMinutes: Int = 9
+    val snoozeDurationMinutes: Int = 9,
+    // Plex playlist as alarm sound
+    val plexPlaylistId: String? = null,
+    val plexPlaylistName: String? = null
 ) {
+    val usePlexPlaylist: Boolean
+        get() = plexPlaylistId != null
     val activeDays: List<Boolean>
         get() = listOf(monday, tuesday, wednesday, thursday, friday, saturday, sunday)
 

@@ -15,20 +15,48 @@ import android.os.IBinder
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import net.damian.tablethub.AlarmFiringActivity
 import net.damian.tablethub.R
+import net.damian.tablethub.plex.PlexRepository
 import net.damian.tablethub.service.mqtt.HaStatePublisher
+import net.damian.tablethub.service.music.PlaybackManager
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class AlarmService : Service() {
 
+    companion object {
+        private const val TAG = "AlarmService"
+        const val ACTION_START_ALARM = "net.damian.tablethub.ACTION_START_ALARM"
+        const val ACTION_STOP_ALARM = "net.damian.tablethub.ACTION_STOP_ALARM"
+        const val ACTION_SNOOZE_ALARM = "net.damian.tablethub.ACTION_SNOOZE_ALARM"
+
+        const val EXTRA_PLEX_PLAYLIST_ID = "plex_playlist_id"
+
+        const val CHANNEL_ID = "alarm_channel"
+        const val NOTIFICATION_ID = 1001
+    }
+
     @Inject
     lateinit var haStatePublisher: HaStatePublisher
 
+    @Inject
+    lateinit var playbackManager: PlaybackManager
+
+    @Inject
+    lateinit var plexRepository: PlexRepository
+
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     private var mediaPlayer: MediaPlayer? = null
+    private var usingPlexPlayback: Boolean = false
     private var vibrator: Vibrator? = null
     private var currentAlarmId: Long = -1
 
@@ -42,10 +70,17 @@ class AlarmService : Service() {
             ACTION_START_ALARM -> {
                 val alarmId = intent.getLongExtra(AlarmReceiver.EXTRA_ALARM_ID, -1)
                 val alarmLabel = intent.getStringExtra(AlarmReceiver.EXTRA_ALARM_LABEL) ?: ""
+                val plexPlaylistId = intent.getStringExtra(EXTRA_PLEX_PLAYLIST_ID)
                 currentAlarmId = alarmId
 
                 startForeground(NOTIFICATION_ID, createNotification(alarmLabel))
-                startAlarmSound()
+
+                if (plexPlaylistId != null) {
+                    startPlexPlaylistAlarm(plexPlaylistId)
+                } else {
+                    startAlarmSound()
+                }
+
                 startVibration()
                 launchAlarmActivity(alarmId, alarmLabel)
 
@@ -128,6 +163,7 @@ class AlarmService : Service() {
     }
 
     private fun startAlarmSound() {
+        usingPlexPlayback = false
         try {
             val alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
                 ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
@@ -146,6 +182,34 @@ class AlarmService : Service() {
             }
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+
+    private fun startPlexPlaylistAlarm(playlistId: String) {
+        usingPlexPlayback = true
+        Log.d(TAG, "Starting Plex playlist alarm: $playlistId")
+
+        serviceScope.launch {
+            try {
+                val result = plexRepository.getPlaylistTracks(playlistId)
+                result.onSuccess { tracks ->
+                    if (tracks.isNotEmpty()) {
+                        Log.d(TAG, "Loaded ${tracks.size} tracks from playlist")
+                        // Shuffle the playlist and play
+                        val shuffledTracks = tracks.shuffled()
+                        playbackManager.playQueue(shuffledTracks, 0)
+                    } else {
+                        Log.w(TAG, "Playlist is empty, falling back to default alarm")
+                        startAlarmSound()
+                    }
+                }.onFailure { error ->
+                    Log.e(TAG, "Failed to load playlist: ${error.message}")
+                    startAlarmSound()
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error starting Plex playlist alarm", e)
+                startAlarmSound()
+            }
         }
     }
 
@@ -168,6 +232,7 @@ class AlarmService : Service() {
     }
 
     private fun stopAlarm() {
+        // Stop MediaPlayer if using default alarm sound
         mediaPlayer?.apply {
             if (isPlaying) {
                 stop()
@@ -175,6 +240,12 @@ class AlarmService : Service() {
             release()
         }
         mediaPlayer = null
+
+        // Stop Plex playback if using playlist
+        if (usingPlexPlayback) {
+            playbackManager.stop()
+            usingPlexPlayback = false
+        }
 
         vibrator?.cancel()
         vibrator = null
@@ -192,14 +263,5 @@ class AlarmService : Service() {
     private fun snoozeAlarm(alarmId: Long) {
         // TODO: Re-schedule alarm for snooze duration (default 9 minutes)
         // This will be implemented when we integrate with AlarmScheduler
-    }
-
-    companion object {
-        const val ACTION_START_ALARM = "net.damian.tablethub.ACTION_START_ALARM"
-        const val ACTION_STOP_ALARM = "net.damian.tablethub.ACTION_STOP_ALARM"
-        const val ACTION_SNOOZE_ALARM = "net.damian.tablethub.ACTION_SNOOZE_ALARM"
-
-        const val CHANNEL_ID = "alarm_channel"
-        const val NOTIFICATION_ID = 1001
     }
 }
