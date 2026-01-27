@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import net.damian.tablethub.data.repository.AlarmRepository
 import net.damian.tablethub.service.alarm.AlarmReceiver
 import net.damian.tablethub.service.alarm.AlarmService
+import net.damian.tablethub.service.display.NightModeManager
 import net.damian.tablethub.service.display.ScreenManager
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -42,6 +43,7 @@ class MqttCommandHandler @Inject constructor(
     private val mqttManager: MqttManager,
     private val alarmRepository: AlarmRepository,
     private val haStatePublisher: HaStatePublisher,
+    private val nightModeManager: NightModeManager,
     private val mediaPlayerPublisher: dagger.Lazy<HaMediaPlayerPublisher>,
     private val moshi: Moshi
 ) {
@@ -77,6 +79,7 @@ class MqttCommandHandler @Inject constructor(
             when (command.command) {
                 "screen", "ON", "OFF" -> handleScreenCommand(command)
                 "brightness" -> handleBrightnessCommand(command)
+                "night_mode" -> handleNightModeCommand(command)
                 "trigger_alarm" -> handleTriggerAlarm()
                 "dismiss_alarm" -> handleDismissAlarm()
                 "enable_alarm" -> handleEnableAlarm(command, true)
@@ -148,6 +151,20 @@ class MqttCommandHandler @Inject constructor(
         Log.d(TAG, "Setting brightness to $brightness")
         ScreenManager.setBrightness(brightness)
         haStatePublisher.updateScreenState(brightness > 0, brightness)
+    }
+
+    private fun handleNightModeCommand(command: MqttCommand) {
+        val value = command.value?.toString()?.uppercase() ?: return
+        when (value) {
+            "ON" -> {
+                Log.d(TAG, "Enabling night mode from HA")
+                nightModeManager.setNightModeFromHa(true)
+            }
+            "OFF" -> {
+                Log.d(TAG, "Disabling night mode from HA")
+                nightModeManager.setNightModeFromHa(false)
+            }
+        }
     }
 
     private fun handleTriggerAlarm() {

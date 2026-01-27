@@ -33,6 +33,13 @@ class SettingsDataStore @Inject constructor(
     private val deviceIdKey = stringPreferencesKey("device_id")
     private val deviceNameKey = stringPreferencesKey("device_name")
 
+    // Night Mode Settings
+    private val nightModeManualEnabledKey = booleanPreferencesKey("night_mode_manual_enabled")
+    private val nightModeAutoEnabledKey = booleanPreferencesKey("night_mode_auto_enabled")
+    private val nightModeLuxThresholdKey = intPreferencesKey("night_mode_lux_threshold")
+    private val nightModeLuxHysteresisKey = intPreferencesKey("night_mode_lux_hysteresis")
+    private val nightModeBrightnessKey = intPreferencesKey("night_mode_brightness")
+
     // TODO: Remove hardcoded values and use settings UI
     val mqttConfig: Flow<MqttConfig> = context.dataStore.data.map { preferences ->
         MqttConfig(
@@ -52,6 +59,16 @@ class SettingsDataStore @Inject constructor(
 
     val deviceName: Flow<String> = context.dataStore.data.map { preferences ->
         preferences[deviceNameKey] ?: "TabletHub"
+    }
+
+    val nightModeConfig: Flow<NightModeConfig> = context.dataStore.data.map { preferences ->
+        NightModeConfig(
+            manualEnabled = preferences[nightModeManualEnabledKey] ?: false,
+            autoEnabled = preferences[nightModeAutoEnabledKey] ?: true,
+            luxThreshold = preferences[nightModeLuxThresholdKey] ?: 15,
+            luxHysteresis = preferences[nightModeLuxHysteresisKey] ?: 5,
+            nightBrightness = preferences[nightModeBrightnessKey] ?: 5
+        )
     }
 
     suspend fun updateMqttConfig(config: MqttConfig) {
@@ -78,6 +95,28 @@ class SettingsDataStore @Inject constructor(
             preferences[mqttEnabledKey] = enabled
         }
     }
+
+    suspend fun updateNightModeConfig(config: NightModeConfig) {
+        context.dataStore.edit { preferences ->
+            preferences[nightModeManualEnabledKey] = config.manualEnabled
+            preferences[nightModeAutoEnabledKey] = config.autoEnabled
+            preferences[nightModeLuxThresholdKey] = config.luxThreshold
+            preferences[nightModeLuxHysteresisKey] = config.luxHysteresis
+            preferences[nightModeBrightnessKey] = config.nightBrightness
+        }
+    }
+
+    suspend fun setNightModeManualEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[nightModeManualEnabledKey] = enabled
+        }
+    }
+
+    suspend fun setNightModeAutoEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[nightModeAutoEnabledKey] = enabled
+        }
+    }
 }
 
 data class MqttConfig(
@@ -95,3 +134,11 @@ data class MqttConfig(
     val serverUri: String
         get() = "${if (useTls) "ssl" else "tcp"}://$host:$port"
 }
+
+data class NightModeConfig(
+    val manualEnabled: Boolean = false,
+    val autoEnabled: Boolean = true,
+    val luxThreshold: Int = 15,
+    val luxHysteresis: Int = 5,
+    val nightBrightness: Int = 5
+)

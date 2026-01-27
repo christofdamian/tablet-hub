@@ -22,6 +22,7 @@ import kotlinx.coroutines.launch
 import net.damian.tablethub.MainActivity
 import net.damian.tablethub.R
 import net.damian.tablethub.data.preferences.SettingsDataStore
+import net.damian.tablethub.service.display.NightModeManager
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -72,6 +73,9 @@ class MqttService : Service() {
 
     @Inject
     lateinit var mediaPlayerPublisher: HaMediaPlayerPublisher
+
+    @Inject
+    lateinit var nightModeManager: NightModeManager
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var discoveryPublished = false
@@ -150,6 +154,11 @@ class MqttService : Service() {
 
                 // Publish initial state
                 haStatePublisher.refreshAndPublish()
+
+                // Wire up night mode state changes to HA publisher
+                nightModeManager.onNightModeChanged = { isActive ->
+                    haStatePublisher.updateNightModeState(isActive)
+                }
 
                 // Start media player publisher
                 mediaPlayerPublisher.startPublishing()

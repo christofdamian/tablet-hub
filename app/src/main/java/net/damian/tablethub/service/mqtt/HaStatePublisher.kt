@@ -157,6 +157,16 @@ class HaStatePublisher @Inject constructor(
     }
 
     /**
+     * Update night mode state and publish.
+     */
+    fun updateNightModeState(isActive: Boolean) {
+        currentState.update { state ->
+            state.copy(nightMode = if (isActive) "ON" else "OFF")
+        }
+        publishState()
+    }
+
+    /**
      * Force refresh all state values and publish.
      */
     fun refreshAndPublish() {
@@ -184,6 +194,7 @@ data class TabletHubState(
     val brightness: Int = 255,
     val battery: Int = 100,
     @com.squareup.moshi.Json(name = "battery_charging") val batteryCharging: Boolean = false,
+    @com.squareup.moshi.Json(name = "night_mode") val nightMode: String = "OFF",
     val alarms: Map<String, AlarmState> = emptyMap()
 )
 

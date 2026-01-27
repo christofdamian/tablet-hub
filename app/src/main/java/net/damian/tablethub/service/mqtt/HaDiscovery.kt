@@ -52,6 +52,7 @@ class HaDiscovery @Inject constructor(
         publishScreenSwitch()
         publishBrightnessLight()
         publishBatterySensor()
+        publishNightModeSwitch()
         publishDismissAlarmButton()
         publishTriggerAlarmButton()
 
@@ -66,6 +67,7 @@ class HaDiscovery @Inject constructor(
             "$HA_DISCOVERY_PREFIX/switch/${deviceId}/screen/config",
             "$HA_DISCOVERY_PREFIX/light/${deviceId}/brightness/config",
             "$HA_DISCOVERY_PREFIX/sensor/${deviceId}/battery/config",
+            "$HA_DISCOVERY_PREFIX/switch/${deviceId}/night_mode/config",
             "$HA_DISCOVERY_PREFIX/button/${deviceId}/dismiss_alarm/config",
             "$HA_DISCOVERY_PREFIX/button/${deviceId}/trigger_alarm/config"
         )
@@ -152,6 +154,20 @@ class HaDiscovery @Inject constructor(
         )
 
         publishConfig("sensor", "battery", config)
+    }
+
+    private fun publishNightModeSwitch() {
+        val config = HaSwitchConfig(
+            name = "Night Mode",
+            uniqueId = "tablethub_${deviceId}_night_mode",
+            stateTopic = stateTopic,
+            commandTopic = commandTopic,
+            valueTemplate = "{{ value_json.night_mode }}",
+            device = deviceInfo,
+            icon = "mdi:weather-night"
+        )
+
+        publishConfig("switch", "night_mode", config)
     }
 
     private fun publishDismissAlarmButton() {

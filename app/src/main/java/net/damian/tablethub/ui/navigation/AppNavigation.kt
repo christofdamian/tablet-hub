@@ -22,7 +22,9 @@ enum class Screen {
 
 @Composable
 fun AppNavigation(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isNightModeActive: Boolean = false,
+    onNightModeToggle: () -> Unit = {}
 ) {
     val screens = Screen.entries
     val pagerState = rememberPagerState(
@@ -36,7 +38,10 @@ fun AppNavigation(
             modifier = Modifier.fillMaxSize()
         ) { page ->
             when (screens[page]) {
-                Screen.Clock -> ClockScreen()
+                Screen.Clock -> ClockScreen(
+                    isNightModeActive = isNightModeActive,
+                    onNightModeToggle = onNightModeToggle
+                )
                 Screen.Buttons -> ButtonsScreen()
                 Screen.Player -> PlayerScreen()
             }

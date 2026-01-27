@@ -8,8 +8,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Alarm
+import androidx.compose.material.icons.filled.Brightness2
+import androidx.compose.material.icons.filled.Brightness7
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -27,6 +30,8 @@ import net.damian.tablethub.ui.components.NextAlarmDisplay
 @Composable
 fun ClockScreen(
     modifier: Modifier = Modifier,
+    isNightModeActive: Boolean = false,
+    onNightModeToggle: () -> Unit = {},
     viewModel: ClockViewModel = hiltViewModel()
 ) {
     val alarms by viewModel.alarms.collectAsState()
@@ -51,6 +56,20 @@ fun ClockScreen(
             NextAlarmDisplay(
                 nextAlarmText = nextAlarmText,
                 modifier = Modifier.padding(top = 32.dp)
+            )
+        }
+
+        // Night mode toggle button (top-right)
+        IconButton(
+            onClick = onNightModeToggle,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 48.dp, end = 16.dp)
+        ) {
+            Icon(
+                imageVector = if (isNightModeActive) Icons.Default.Brightness7 else Icons.Default.Brightness2,
+                contentDescription = if (isNightModeActive) "Exit night mode" else "Enter night mode",
+                tint = MaterialTheme.colorScheme.onSurface
             )
         }
 

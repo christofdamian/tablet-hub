@@ -8,15 +8,28 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import dagger.hilt.android.AndroidEntryPoint
+import net.damian.tablethub.service.display.LightSensorService
+import net.damian.tablethub.service.display.NightModeManager
 import net.damian.tablethub.service.display.ScreenManager
 import net.damian.tablethub.service.mqtt.MqttService
 import net.damian.tablethub.ui.navigation.AppNavigation
+import net.damian.tablethub.ui.screens.clock.NightClockDisplay
 import net.damian.tablethub.ui.theme.TabletHubTheme
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var nightModeManager: NightModeManager
+
+    @Inject
+    lateinit var lightSensorService: LightSensorService
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -27,21 +40,47 @@ class MainActivity : ComponentActivity() {
         // Start MQTT service
         MqttService.start(this)
 
+        // Start light sensor
+        lightSensorService.startListening()
+
         setContent {
-            TabletHubTheme {
-                Scaffold(
-                    modifier = Modifier.fillMaxSize(),
-                    containerColor = MaterialTheme.colorScheme.background
-                ) { innerPadding ->
-                    AppNavigation(
-                        modifier = Modifier.padding(innerPadding)
+            val nightModeState by nightModeManager.nightModeState.collectAsState()
+
+            TabletHubTheme(nightMode = nightModeState.isActive) {
+                if (nightModeState.isActive) {
+                    // Show minimal night clock display
+                    NightClockDisplay(
+                        onTap = { nightModeManager.toggleNightMode() }
                     )
+                } else {
+                    // Show normal UI
+                    Scaffold(
+                        modifier = Modifier.fillMaxSize(),
+                        containerColor = MaterialTheme.colorScheme.background
+                    ) { innerPadding ->
+                        AppNavigation(
+                            modifier = Modifier.padding(innerPadding),
+                            isNightModeActive = nightModeState.isActive,
+                            onNightModeToggle = { nightModeManager.toggleNightMode() }
+                        )
+                    }
                 }
             }
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        lightSensorService.startListening()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        lightSensorService.stopListening()
+    }
+
     override fun onDestroy() {
+        lightSensorService.stopListening()
         ScreenManager.clearActivity()
         super.onDestroy()
     }

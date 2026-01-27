@@ -17,3 +17,8 @@ val ClockWhite = Color(0xFFFFFFFF)
 val AlarmRed = Color(0xFFFF5252)
 val MusicBlue = Color(0xFF448AFF)
 val HomeGreen = Color(0xFF69F0AE)
+
+// Night mode colors - red-shifted for night vision preservation
+val NightRed = Color(0xFFCC0000)
+val NightRedDim = Color(0xFF660000)
+val NightBackground = Color(0xFF000000)
