@@ -273,8 +273,8 @@ class MqttManager @Inject constructor(
     }
 
     private fun handleConnectionFailure(throwable: Throwable?) {
-        val errorMessage = parseErrorMessage(throwable)
-        val isRecoverable = isRecoverableError(throwable)
+        val errorMessage = MqttErrorParser.parseErrorMessage(throwable)
+        val isRecoverable = MqttErrorParser.isRecoverableError(throwable)
 
         if (!isRecoverable) {
             _connectionState.value = MqttConnectionState.Error(
@@ -286,54 +286,6 @@ class MqttManager @Inject constructor(
         }
 
         scheduleReconnect(errorMessage)
-    }
-
-    private fun parseErrorMessage(throwable: Throwable?): String {
-        if (throwable == null) return "Unknown error"
-
-        // Provide user-friendly error messages
-        return when {
-            throwable is MqttException -> {
-                when (throwable.reasonCode.toShort()) {
-                    MqttException.REASON_CODE_CLIENT_EXCEPTION -> "Connection failed"
-                    MqttException.REASON_CODE_INVALID_CLIENT_ID -> "Invalid client ID"
-                    MqttException.REASON_CODE_BROKER_UNAVAILABLE -> "Broker unavailable"
-                    MqttException.REASON_CODE_FAILED_AUTHENTICATION -> "Authentication failed"
-                    MqttException.REASON_CODE_NOT_AUTHORIZED -> "Not authorized"
-                    MqttException.REASON_CODE_CONNECT_IN_PROGRESS -> "Connection in progress"
-                    MqttException.REASON_CODE_CLIENT_CONNECTED -> "Already connected"
-                    MqttException.REASON_CODE_CLIENT_DISCONNECTING -> "Disconnecting"
-                    MqttException.REASON_CODE_SERVER_CONNECT_ERROR -> "Server connection error"
-                    MqttException.REASON_CODE_CLIENT_TIMEOUT -> "Connection timeout"
-                    MqttException.REASON_CODE_SOCKET_FACTORY_MISMATCH -> "SSL configuration error"
-                    MqttException.REASON_CODE_SSL_CONFIG_ERROR -> "SSL configuration error"
-                    else -> throwable.message ?: "MQTT error (${throwable.reasonCode})"
-                }
-            }
-            throwable.message?.contains("UnknownHostException", ignoreCase = true) == true ->
-                "Cannot resolve host"
-            throwable.message?.contains("ConnectException", ignoreCase = true) == true ->
-                "Connection refused"
-            throwable.message?.contains("SocketTimeoutException", ignoreCase = true) == true ->
-                "Connection timeout"
-            throwable.message?.contains("SSLHandshakeException", ignoreCase = true) == true ->
-                "SSL handshake failed"
-            else -> throwable.message ?: "Unknown error"
-        }
-    }
-
-    private fun isRecoverableError(throwable: Throwable?): Boolean {
-        if (throwable == null) return true
-
-        if (throwable is MqttException) {
-            return when (throwable.reasonCode.toShort()) {
-                MqttException.REASON_CODE_INVALID_CLIENT_ID,
-                MqttException.REASON_CODE_FAILED_AUTHENTICATION,
-                MqttException.REASON_CODE_NOT_AUTHORIZED -> false
-                else -> true
-            }
-        }
-        return true
     }
 
     private fun scheduleReconnect(lastError: String? = null) {
@@ -426,7 +378,7 @@ class MqttManager @Inject constructor(
                 }
 
                 override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
-                    result = ConnectionTestResult.Failure(parseErrorMessage(exception))
+                    result = ConnectionTestResult.Failure(MqttErrorParser.parseErrorMessage(exception))
                     try {
                         testClient.close()
                     } catch (e: Exception) {
@@ -440,7 +392,7 @@ class MqttManager @Inject constructor(
             latch.await(CONNECTION_TEST_TIMEOUT_MS.toLong(), java.util.concurrent.TimeUnit.MILLISECONDS)
             result
         } catch (e: Exception) {
-            ConnectionTestResult.Failure(parseErrorMessage(e))
+            ConnectionTestResult.Failure(MqttErrorParser.parseErrorMessage(e))
         }
     }
 
