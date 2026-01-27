@@ -55,12 +55,14 @@ fun ButtonsScreen(
     viewModel: ButtonsViewModel = hiltViewModel()
 ) {
     val buttons by viewModel.buttons.collectAsState()
+    val entityStates by viewModel.entityStates.collectAsState()
     val editingButton by viewModel.editingButton.collectAsState()
     val showEditor by viewModel.showEditor.collectAsState()
 
     Box(modifier = modifier.fillMaxSize()) {
         ButtonGrid(
             buttons = buttons,
+            entityStates = entityStates,
             onButtonClick = viewModel::onButtonClick,
             onButtonLongPress = viewModel::onButtonLongPress,
             modifier = Modifier
@@ -82,6 +84,7 @@ fun ButtonsScreen(
 @Composable
 private fun ButtonGrid(
     buttons: Map<Int, ButtonEntity>,
+    entityStates: Map<String, net.damian.tablethub.service.mqtt.EntityState>,
     onButtonClick: (Int) -> Unit,
     onButtonLongPress: (Int) -> Unit,
     modifier: Modifier = Modifier
@@ -95,8 +98,14 @@ private fun ButtonGrid(
     ) {
         items((0 until ButtonsViewModel.TOTAL_BUTTONS).toList()) { position ->
             val button = buttons[position]
+            val entityState = button?.let {
+                if (it.trackEntityState && it.entityId.isNotBlank()) {
+                    entityStates[it.entityId]
+                } else null
+            }
             ActionButton(
                 button = button,
+                isEntityOn = entityState?.isOn == true,
                 onClick = { onButtonClick(position) },
                 onLongPress = { onButtonLongPress(position) }
             )
@@ -108,12 +117,29 @@ private fun ButtonGrid(
 @Composable
 private fun ActionButton(
     button: ButtonEntity?,
+    isEntityOn: Boolean,
     onClick: () -> Unit,
     onLongPress: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val haptic = LocalHapticFeedback.current
     val isConfigured = button?.isConfigured == true
+    val tracksState = button?.trackEntityState == true
+
+    // Determine colors based on entity state
+    val containerColor = when {
+        !isConfigured -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        tracksState && isEntityOn -> MaterialTheme.colorScheme.primary
+        tracksState && !isEntityOn -> MaterialTheme.colorScheme.surfaceVariant
+        else -> MaterialTheme.colorScheme.primaryContainer
+    }
+
+    val contentColor = when {
+        !isConfigured -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+        tracksState && isEntityOn -> MaterialTheme.colorScheme.onPrimary
+        tracksState && !isEntityOn -> MaterialTheme.colorScheme.onSurfaceVariant
+        else -> MaterialTheme.colorScheme.onPrimaryContainer
+    }
 
     Card(
         modifier = modifier
@@ -125,13 +151,7 @@ private fun ActionButton(
                     onLongPress()
                 }
             ),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isConfigured) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-            }
-        )
+        colors = CardDefaults.cardColors(containerColor = containerColor)
     ) {
         Column(
             modifier = Modifier
@@ -148,18 +168,14 @@ private fun ActionButton(
                 },
                 contentDescription = button?.label,
                 modifier = Modifier.size(40.dp),
-                tint = if (isConfigured) {
-                    MaterialTheme.colorScheme.onPrimaryContainer
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                }
+                tint = contentColor
             )
 
             if (isConfigured && button?.label?.isNotBlank() == true) {
                 Text(
                     text = button.label,
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    color = contentColor,
                     textAlign = TextAlign.Center,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,

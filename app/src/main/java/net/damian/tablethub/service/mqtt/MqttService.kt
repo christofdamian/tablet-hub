@@ -77,6 +77,9 @@ class MqttService : Service() {
     @Inject
     lateinit var nightModeManager: NightModeManager
 
+    @Inject
+    lateinit var entityStateTracker: EntityStateTracker
+
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var discoveryPublished = false
 
@@ -169,6 +172,10 @@ class MqttService : Service() {
                 mqttManager.subscribe("tablethub/$deviceId/media_player/set")
                 commandHandler.startListening()
                 Log.d(TAG, "Subscribed to command topics")
+
+                // Start entity state tracking for button state reflection
+                entityStateTracker.startListening()
+                Log.d(TAG, "Entity state tracker started")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to publish discovery messages", e)
             }
