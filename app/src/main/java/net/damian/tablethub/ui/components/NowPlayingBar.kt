@@ -3,6 +3,7 @@ package net.damian.tablethub.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,14 +12,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -67,76 +72,128 @@ fun NowPlayingBar(
     }
 
     Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        tonalElevation = 3.dp,
-        shadowElevation = 8.dp
+        modifier = modifier.fillMaxWidth(),
+        tonalElevation = 8.dp,
+        shadowElevation = 12.dp,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh
     ) {
         Column {
-            // Progress bar
-            if (duration > 0) {
-                LinearProgressIndicator(
-                    progress = { (currentPosition.toFloat() / duration).coerceIn(0f, 1f) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(2.dp),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.surfaceVariant
-                )
-            }
-
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .clickable(onClick = onClick)
+                    .padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Album art
-                AsyncImage(
-                    model = artworkUrl,
-                    contentDescription = null,
+                // Large album art
+                Box(
                     modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(4.dp)),
-                    contentScale = ContentScale.Crop
-                )
+                        .size(80.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (artworkUrl != null) {
+                        AsyncImage(
+                            model = artworkUrl,
+                            contentDescription = "Album art",
+                            modifier = Modifier.size(80.dp),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.MusicNote,
+                            contentDescription = null,
+                            modifier = Modifier.size(32.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
 
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(16.dp))
 
-                // Track info
+                // Track info and progress
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
                         text = track.title,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+
                     Text(
                         text = track.grandparentTitle ?: track.parentTitle ?: "",
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Progress bar with time
+                    Column {
+                        LinearProgressIndicator(
+                            progress = {
+                                if (duration > 0) (currentPosition.toFloat() / duration).coerceIn(0f, 1f)
+                                else 0f
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(4.dp)
+                                .clip(RoundedCornerShape(2.dp)),
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = formatDuration(currentPosition),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = formatDuration(duration),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
 
-                // Playback controls
+                Spacer(modifier = Modifier.width(16.dp))
+
+                // Large playback controls
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = onPrevious) {
+                    IconButton(
+                        onClick = onPrevious,
+                        modifier = Modifier.size(48.dp)
+                    ) {
                         Icon(
                             imageVector = Icons.Default.SkipPrevious,
-                            contentDescription = "Previous"
+                            contentDescription = "Previous",
+                            modifier = Modifier.size(32.dp)
                         )
                     }
 
-                    IconButton(onClick = onPlayPause) {
+                    FilledIconButton(
+                        onClick = onPlayPause,
+                        modifier = Modifier.size(56.dp),
+                        colors = IconButtonDefaults.filledIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
+                    ) {
                         Icon(
                             imageVector = if (playbackState.isPlaying) {
                                 Icons.Default.Pause
@@ -148,14 +205,26 @@ fun NowPlayingBar(
                         )
                     }
 
-                    IconButton(onClick = onNext) {
+                    IconButton(
+                        onClick = onNext,
+                        modifier = Modifier.size(48.dp)
+                    ) {
                         Icon(
                             imageVector = Icons.Default.SkipNext,
-                            contentDescription = "Next"
+                            contentDescription = "Next",
+                            modifier = Modifier.size(32.dp)
                         )
                     }
                 }
             }
         }
     }
+}
+
+private fun formatDuration(durationMs: Long): String {
+    if (durationMs <= 0) return "0:00"
+    val totalSeconds = durationMs / 1000
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    return "%d:%02d".format(minutes, seconds)
 }
