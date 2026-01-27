@@ -26,6 +26,10 @@ coroutines = "1.9.0"
 lifecycleRuntime = "2.8.7"
 navigationCompose = "2.8.4"
 securityCrypto = "1.1.0-alpha06"
+playServicesAuth = "21.0.0"
+credentials = "1.3.0"
+googleid = "1.1.1"
+googleApiClient = "1.35.2"
 
 [libraries]
 # AndroidX Core
@@ -93,6 +97,14 @@ work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version
 # Coroutines
 coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
 coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
+coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "coroutines" }
+
+# Google Identity Services
+play-services-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "playServicesAuth" }
+credentials = { group = "androidx.credentials", name = "credentials", version.ref = "credentials" }
+credentials-play-services-auth = { group = "androidx.credentials", name = "credentials-play-services-auth", version.ref = "credentials" }
+googleid = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleid" }
+google-api-client-android = { group = "com.google.api-client", name = "google-api-client-android", version.ref = "googleApiClient" }
 
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }

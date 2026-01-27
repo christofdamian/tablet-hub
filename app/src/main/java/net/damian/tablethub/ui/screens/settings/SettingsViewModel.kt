@@ -11,6 +11,8 @@ import kotlinx.coroutines.launch
 import net.damian.tablethub.data.preferences.MqttConfig
 import net.damian.tablethub.data.preferences.NightModeConfig
 import net.damian.tablethub.data.preferences.SettingsDataStore
+import net.damian.tablethub.photos.GooglePhotosAuthManager
+import net.damian.tablethub.photos.model.SlideshowConfig
 import net.damian.tablethub.service.mqtt.ConnectionTestResult
 import net.damian.tablethub.service.mqtt.MqttConnectionState
 import net.damian.tablethub.service.mqtt.MqttManager
@@ -19,7 +21,8 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val settingsDataStore: SettingsDataStore,
-    private val mqttManager: MqttManager
+    private val mqttManager: MqttManager,
+    private val googlePhotosAuthManager: GooglePhotosAuthManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -55,7 +58,20 @@ class SettingsViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(nightModeConfig = config)
             }
         }
+
+        viewModelScope.launch {
+            // Load slideshow config
+            settingsDataStore.slideshowConfig.collect { config ->
+                _uiState.value = _uiState.value.copy(slideshowConfig = config)
+            }
+        }
     }
+
+    val isGooglePhotosAuthenticated: Boolean
+        get() = googlePhotosAuthManager.isAuthenticated
+
+    val googlePhotosUserEmail: String?
+        get() = googlePhotosAuthManager.userEmail
 
     fun updateMqttHost(host: String) {
         _uiState.value = _uiState.value.copy(
@@ -186,6 +202,46 @@ class SettingsViewModel @Inject constructor(
     fun reconnectMqtt() {
         mqttManager.reconnectNow()
     }
+
+    fun updateSlideshowRotationInterval(seconds: Int) {
+        _uiState.value = _uiState.value.copy(
+            slideshowConfig = _uiState.value.slideshowConfig.copy(rotationIntervalSeconds = seconds)
+        )
+        viewModelScope.launch {
+            settingsDataStore.setSlideshowRotationInterval(seconds)
+        }
+    }
+
+    fun updateSlideshowKenBurnsEnabled(enabled: Boolean) {
+        _uiState.value = _uiState.value.copy(
+            slideshowConfig = _uiState.value.slideshowConfig.copy(kenBurnsEnabled = enabled)
+        )
+        viewModelScope.launch {
+            settingsDataStore.setSlideshowKenBurnsEnabled(enabled)
+        }
+    }
+
+    fun updateSlideshowClockOverlayEnabled(enabled: Boolean) {
+        _uiState.value = _uiState.value.copy(
+            slideshowConfig = _uiState.value.slideshowConfig.copy(clockOverlayEnabled = enabled)
+        )
+        viewModelScope.launch {
+            settingsDataStore.setSlideshowClockOverlayEnabled(enabled)
+        }
+    }
+
+    fun signOutGooglePhotos() {
+        viewModelScope.launch {
+            googlePhotosAuthManager.signOut()
+            settingsDataStore.clearSlideshowAlbum()
+            _uiState.value = _uiState.value.copy(
+                slideshowConfig = _uiState.value.slideshowConfig.copy(
+                    selectedAlbumId = null,
+                    selectedAlbumTitle = null
+                )
+            )
+        }
+    }
 }
 
 data class SettingsUiState(
@@ -201,6 +257,7 @@ data class SettingsUiState(
     val deviceId: String = "tablethub",
     val deviceName: String = "TabletHub",
     val nightModeConfig: NightModeConfig = NightModeConfig(),
+    val slideshowConfig: SlideshowConfig = SlideshowConfig(),
     val saveSuccess: Boolean = false,
     val connectionTestResult: TestResult? = null
 )

@@ -13,11 +13,13 @@ import net.damian.tablethub.ui.components.PageIndicator
 import net.damian.tablethub.ui.screens.buttons.ButtonsScreen
 import net.damian.tablethub.ui.screens.clock.ClockScreen
 import net.damian.tablethub.ui.screens.player.PlayerScreen
+import net.damian.tablethub.ui.screens.slideshow.SlideshowScreen
 
 enum class Screen {
     Clock,
     Buttons,
-    Player
+    Player,
+    Slideshow
 }
 
 @Composable
@@ -46,6 +48,7 @@ fun AppNavigation(
                 )
                 Screen.Buttons -> ButtonsScreen()
                 Screen.Player -> PlayerScreen()
+                Screen.Slideshow -> SlideshowScreen()
             }
         }
 

@@ -11,6 +11,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import net.damian.tablethub.photos.model.SlideshowConfig
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -40,6 +41,13 @@ class SettingsDataStore @Inject constructor(
     private val nightModeLuxHysteresisKey = intPreferencesKey("night_mode_lux_hysteresis")
     private val nightModeBrightnessKey = intPreferencesKey("night_mode_brightness")
 
+    // Slideshow Settings
+    private val slideshowRotationIntervalKey = intPreferencesKey("slideshow_rotation_interval")
+    private val slideshowKenBurnsEnabledKey = booleanPreferencesKey("slideshow_ken_burns_enabled")
+    private val slideshowClockOverlayEnabledKey = booleanPreferencesKey("slideshow_clock_overlay_enabled")
+    private val slideshowAlbumIdKey = stringPreferencesKey("slideshow_album_id")
+    private val slideshowAlbumTitleKey = stringPreferencesKey("slideshow_album_title")
+
     // TODO: Remove hardcoded values and use settings UI
     val mqttConfig: Flow<MqttConfig> = context.dataStore.data.map { preferences ->
         MqttConfig(
@@ -68,6 +76,16 @@ class SettingsDataStore @Inject constructor(
             luxThreshold = preferences[nightModeLuxThresholdKey] ?: 15,
             luxHysteresis = preferences[nightModeLuxHysteresisKey] ?: 5,
             nightBrightness = preferences[nightModeBrightnessKey] ?: 5
+        )
+    }
+
+    val slideshowConfig: Flow<SlideshowConfig> = context.dataStore.data.map { preferences ->
+        SlideshowConfig(
+            rotationIntervalSeconds = preferences[slideshowRotationIntervalKey] ?: 30,
+            kenBurnsEnabled = preferences[slideshowKenBurnsEnabledKey] ?: true,
+            clockOverlayEnabled = preferences[slideshowClockOverlayEnabledKey] ?: true,
+            selectedAlbumId = preferences[slideshowAlbumIdKey],
+            selectedAlbumTitle = preferences[slideshowAlbumTitleKey]
         )
     }
 
@@ -115,6 +133,48 @@ class SettingsDataStore @Inject constructor(
     suspend fun setNightModeAutoEnabled(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[nightModeAutoEnabledKey] = enabled
+        }
+    }
+
+    suspend fun updateSlideshowConfig(config: SlideshowConfig) {
+        context.dataStore.edit { preferences ->
+            preferences[slideshowRotationIntervalKey] = config.rotationIntervalSeconds
+            preferences[slideshowKenBurnsEnabledKey] = config.kenBurnsEnabled
+            preferences[slideshowClockOverlayEnabledKey] = config.clockOverlayEnabled
+            config.selectedAlbumId?.let { preferences[slideshowAlbumIdKey] = it }
+            config.selectedAlbumTitle?.let { preferences[slideshowAlbumTitleKey] = it }
+        }
+    }
+
+    suspend fun updateSlideshowAlbum(albumId: String, albumTitle: String) {
+        context.dataStore.edit { preferences ->
+            preferences[slideshowAlbumIdKey] = albumId
+            preferences[slideshowAlbumTitleKey] = albumTitle
+        }
+    }
+
+    suspend fun clearSlideshowAlbum() {
+        context.dataStore.edit { preferences ->
+            preferences.remove(slideshowAlbumIdKey)
+            preferences.remove(slideshowAlbumTitleKey)
+        }
+    }
+
+    suspend fun setSlideshowRotationInterval(seconds: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[slideshowRotationIntervalKey] = seconds
+        }
+    }
+
+    suspend fun setSlideshowKenBurnsEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[slideshowKenBurnsEnabledKey] = enabled
+        }
+    }
+
+    suspend fun setSlideshowClockOverlayEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[slideshowClockOverlayEnabledKey] = enabled
         }
     }
 }
