@@ -131,6 +131,9 @@ class MqttService : Service() {
                         }
                         is MqttConnectionState.Connecting -> "Connecting..."
                         is MqttConnectionState.Disconnected -> "Disconnected"
+                        is MqttConnectionState.Reconnecting ->
+                            "Reconnecting (${state.attempt}/${state.maxAttempts})..."
+                        is MqttConnectionState.WaitingForNetwork -> "Waiting for network..."
                         is MqttConnectionState.Error -> "Error: ${state.message}"
                     }
                     updateNotification(statusText)

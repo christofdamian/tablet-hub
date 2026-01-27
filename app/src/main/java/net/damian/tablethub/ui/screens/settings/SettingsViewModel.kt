@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 import net.damian.tablethub.data.preferences.MqttConfig
 import net.damian.tablethub.data.preferences.NightModeConfig
 import net.damian.tablethub.data.preferences.SettingsDataStore
+import net.damian.tablethub.service.mqtt.ConnectionTestResult
 import net.damian.tablethub.service.mqtt.MqttConnectionState
 import net.damian.tablethub.service.mqtt.MqttManager
 import javax.inject.Inject
@@ -157,10 +158,33 @@ class SettingsViewModel @Inject constructor(
     fun testMqttConnection() {
         viewModelScope.launch {
             val config = _uiState.value.mqttConfig
-            if (config.isValid) {
-                mqttManager.connect(config)
+            if (!config.isValid) {
+                _uiState.value = _uiState.value.copy(
+                    connectionTestResult = TestResult.Failure("Invalid configuration")
+                )
+                return@launch
             }
+
+            _uiState.value = _uiState.value.copy(
+                connectionTestResult = TestResult.Testing
+            )
+
+            val result = mqttManager.testConnection(config)
+            _uiState.value = _uiState.value.copy(
+                connectionTestResult = when (result) {
+                    is ConnectionTestResult.Success -> TestResult.Success
+                    is ConnectionTestResult.Failure -> TestResult.Failure(result.message)
+                }
+            )
         }
+    }
+
+    fun clearTestResult() {
+        _uiState.value = _uiState.value.copy(connectionTestResult = null)
+    }
+
+    fun reconnectMqtt() {
+        mqttManager.reconnectNow()
     }
 }
 
@@ -177,5 +201,12 @@ data class SettingsUiState(
     val deviceId: String = "tablethub",
     val deviceName: String = "TabletHub",
     val nightModeConfig: NightModeConfig = NightModeConfig(),
-    val saveSuccess: Boolean = false
+    val saveSuccess: Boolean = false,
+    val connectionTestResult: TestResult? = null
 )
+
+sealed class TestResult {
+    data object Testing : TestResult()
+    data object Success : TestResult()
+    data class Failure(val message: String) : TestResult()
+}

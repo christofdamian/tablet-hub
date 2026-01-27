@@ -8,20 +8,26 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -60,6 +66,20 @@ fun SettingsScreen(
         }
     }
 
+    LaunchedEffect(uiState.connectionTestResult) {
+        when (val result = uiState.connectionTestResult) {
+            is TestResult.Success -> {
+                snackbarHostState.showSnackbar("Connection successful")
+                viewModel.clearTestResult()
+            }
+            is TestResult.Failure -> {
+                snackbarHostState.showSnackbar("Connection failed: ${result.message}")
+                viewModel.clearTestResult()
+            }
+            else -> {}
+        }
+    }
+
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -89,7 +109,10 @@ fun SettingsScreen(
         ) {
             // Connection Section
             SettingsSection(title = "Connection") {
-                MqttConnectionStatus(mqttConnectionState)
+                MqttConnectionStatus(
+                    state = mqttConnectionState,
+                    onReconnect = { viewModel.reconnectMqtt() }
+                )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -140,11 +163,24 @@ fun SettingsScreen(
                     onCheckedChange = { viewModel.updateMqttUseTls(it) }
                 )
 
-                Button(
-                    onClick = { viewModel.testMqttConnection() },
-                    modifier = Modifier.fillMaxWidth()
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text("Test Connection")
+                    Button(
+                        onClick = { viewModel.testMqttConnection() },
+                        modifier = Modifier.weight(1f),
+                        enabled = uiState.connectionTestResult !is TestResult.Testing
+                    ) {
+                        if (uiState.connectionTestResult is TestResult.Testing) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+                        Text("Test Connection")
+                    }
                 }
             }
 
@@ -283,24 +319,88 @@ private fun SwitchSetting(
 }
 
 @Composable
-private fun MqttConnectionStatus(state: MqttConnectionState) {
-    val (statusText, statusColor) = when (state) {
-        is MqttConnectionState.Connected -> "Connected" to MaterialTheme.colorScheme.primary
-        is MqttConnectionState.Connecting -> "Connecting..." to MaterialTheme.colorScheme.tertiary
-        is MqttConnectionState.Disconnected -> "Disconnected" to MaterialTheme.colorScheme.outline
-        is MqttConnectionState.Error -> "Error: ${state.message}" to MaterialTheme.colorScheme.error
+private fun MqttConnectionStatus(
+    state: MqttConnectionState,
+    onReconnect: () -> Unit
+) {
+    val (statusText, statusColor, icon) = when (state) {
+        is MqttConnectionState.Connected -> Triple(
+            "Connected",
+            MaterialTheme.colorScheme.primary,
+            Icons.Default.CheckCircle
+        )
+        is MqttConnectionState.Connecting -> Triple(
+            "Connecting...",
+            MaterialTheme.colorScheme.tertiary,
+            null
+        )
+        is MqttConnectionState.Disconnected -> Triple(
+            "Disconnected",
+            MaterialTheme.colorScheme.outline,
+            null
+        )
+        is MqttConnectionState.Reconnecting -> Triple(
+            "Reconnecting (${state.attempt}/${state.maxAttempts})...",
+            MaterialTheme.colorScheme.tertiary,
+            null
+        )
+        is MqttConnectionState.WaitingForNetwork -> Triple(
+            "Waiting for network...",
+            MaterialTheme.colorScheme.outline,
+            null
+        )
+        is MqttConnectionState.Error -> Triple(
+            state.message,
+            MaterialTheme.colorScheme.error,
+            Icons.Default.Error
+        )
     }
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text("Status:", style = MaterialTheme.typography.bodyMedium)
-        Text(
-            text = statusText,
-            style = MaterialTheme.typography.bodyMedium,
-            color = statusColor
-        )
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text("Status:", style = MaterialTheme.typography.bodyMedium)
+                if (icon != null) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = statusColor,
+                        modifier = Modifier.size(16.dp)
+                    )
+                } else if (state is MqttConnectionState.Connecting ||
+                    state is MqttConnectionState.Reconnecting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp
+                    )
+                }
+            }
+            Text(
+                text = statusText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = statusColor
+            )
+        }
+
+        // Show reconnect button when not connected
+        if (state is MqttConnectionState.Error ||
+            state is MqttConnectionState.Disconnected) {
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = onReconnect,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.Refresh, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Reconnect Now")
+            }
+        }
     }
 }
