@@ -79,21 +79,22 @@ data class PlexDirectory(
 
 @JsonClass(generateAdapter = true)
 data class PlexMetadata(
-    val ratingKey: String,
-    val key: String,
-    val type: String, // "artist", "album", "track", "playlist"
-    val title: String,
-    val parentTitle: String?, // Album name for tracks
-    val grandparentTitle: String?, // Artist name for tracks
-    val summary: String?,
-    val thumb: String?,
-    val art: String?,
-    val duration: Long?, // in milliseconds
-    val index: Int?, // Track number
-    val parentIndex: Int?, // Disc number
-    val year: Int?,
-    val addedAt: Long?,
-    @Json(name = "Media") val media: List<PlexMedia>?
+    val ratingKey: String = "",
+    val key: String = "",
+    val type: String = "", // "artist", "album", "track", "playlist"
+    val title: String = "",
+    val parentTitle: String? = null, // Album name for tracks
+    val grandparentTitle: String? = null, // Artist name for tracks
+    val summary: String? = null,
+    val thumb: String? = null,
+    val art: String? = null,
+    val duration: Long? = null, // in milliseconds
+    val index: Int? = null, // Track number
+    val parentIndex: Int? = null, // Disc number
+    val year: Int? = null,
+    val addedAt: Long? = null,
+    val leafCount: Int? = null, // Number of items (for playlists)
+    @Json(name = "Media") val media: List<PlexMedia>? = null
 )
 
 @JsonClass(generateAdapter = true)
