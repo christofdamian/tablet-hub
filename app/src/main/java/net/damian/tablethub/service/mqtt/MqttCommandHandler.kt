@@ -31,6 +31,10 @@ import javax.inject.Singleton
  * {"command": "dismiss_alarm"}
  * {"command": "enable_alarm", "alarm_id": 1}
  * {"command": "disable_alarm", "alarm_id": 1}
+ * {"command": "media_play"}
+ * {"command": "media_pause"}
+ * {"command": "media_next"}
+ * {"command": "media_previous"}
  */
 @Singleton
 class MqttCommandHandler @Inject constructor(
@@ -38,6 +42,7 @@ class MqttCommandHandler @Inject constructor(
     private val mqttManager: MqttManager,
     private val alarmRepository: AlarmRepository,
     private val haStatePublisher: HaStatePublisher,
+    private val mediaPlayerPublisher: dagger.Lazy<HaMediaPlayerPublisher>,
     private val moshi: Moshi
 ) {
     companion object {
@@ -55,6 +60,12 @@ class MqttCommandHandler @Inject constructor(
     }
 
     private fun handleMessage(message: MqttIncomingMessage) {
+        // Handle media player commands
+        if (message.topic.endsWith("/media_player/set")) {
+            handleMediaPlayerCommand(message.payload)
+            return
+        }
+
         if (!message.topic.endsWith("/command")) return
 
         Log.d(TAG, "Received command: ${message.payload}")
@@ -70,6 +81,8 @@ class MqttCommandHandler @Inject constructor(
                 "dismiss_alarm" -> handleDismissAlarm()
                 "enable_alarm" -> handleEnableAlarm(command, true)
                 "disable_alarm" -> handleEnableAlarm(command, false)
+                "media_play", "media_pause", "media_stop",
+                "media_next", "media_previous", "media_play_pause" -> handleMediaCommand(command.command)
                 else -> Log.w(TAG, "Unknown command: ${command.command}")
             }
         } catch (e: Exception) {
@@ -80,6 +93,17 @@ class MqttCommandHandler @Inject constructor(
                 else -> Log.e(TAG, "Failed to parse command: ${message.payload}", e)
             }
         }
+    }
+
+    private fun handleMediaPlayerCommand(payload: String) {
+        Log.d(TAG, "Received media player command: $payload")
+        // Payload can be simple command like "play", "pause", etc.
+        mediaPlayerPublisher.get().handleCommand(payload, null)
+    }
+
+    private fun handleMediaCommand(command: String) {
+        val mediaCommand = command.removePrefix("media_")
+        mediaPlayerPublisher.get().handleCommand(mediaCommand, null)
     }
 
     private fun handleScreenCommand(command: MqttCommand) {

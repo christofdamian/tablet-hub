@@ -70,6 +70,9 @@ class MqttService : Service() {
     @Inject
     lateinit var commandHandler: MqttCommandHandler
 
+    @Inject
+    lateinit var mediaPlayerPublisher: HaMediaPlayerPublisher
+
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var discoveryPublished = false
 
@@ -148,11 +151,15 @@ class MqttService : Service() {
                 // Publish initial state
                 haStatePublisher.refreshAndPublish()
 
-                // Subscribe to command topic and start listening
+                // Start media player publisher
+                mediaPlayerPublisher.startPublishing()
+
+                // Subscribe to command topics and start listening
                 val deviceId = settingsDataStore.deviceId.first()
                 mqttManager.subscribe("tablethub/$deviceId/command")
+                mqttManager.subscribe("tablethub/$deviceId/media_player/set")
                 commandHandler.startListening()
-                Log.d(TAG, "Subscribed to command topic")
+                Log.d(TAG, "Subscribed to command topics")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to publish discovery messages", e)
             }
