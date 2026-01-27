@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import net.damian.tablethub.data.preferences.SettingsDataStore
 import net.damian.tablethub.plex.PlexRepository
 import net.damian.tablethub.service.music.PlaybackManager
@@ -29,6 +30,7 @@ class HaMediaPlayerPublisher @Inject constructor(
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val mainScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var isPublishing = false
     private var deviceId: String = "tablethub"
 
@@ -83,8 +85,13 @@ class HaMediaPlayerPublisher @Inject constructor(
         Log.d(TAG, "Published media player discovery config")
     }
 
-    private fun publishState(state: PlaybackState) {
+    private suspend fun publishState(state: PlaybackState) {
         val track = state.currentTrack
+
+        // Get position on main thread since MediaController requires it
+        val position = withContext(Dispatchers.Main) {
+            playbackManager.getCurrentPosition()
+        }
 
         val stateJson = JSONObject().apply {
             // State: playing, paused, idle
@@ -104,7 +111,6 @@ class HaMediaPlayerPublisher @Inject constructor(
                     put("media_duration", duration / 1000) // Convert to seconds
                 }
 
-                val position = playbackManager.getCurrentPosition()
                 put("media_position", position / 1000) // Convert to seconds
                 put("media_position_updated_at", System.currentTimeMillis() / 1000.0)
 
@@ -133,14 +139,17 @@ class HaMediaPlayerPublisher @Inject constructor(
     fun handleCommand(command: String, payload: String?) {
         Log.d(TAG, "Received media player command: $command, payload: $payload")
 
-        when (command.lowercase()) {
-            "play" -> playbackManager.play()
-            "pause" -> playbackManager.pause()
-            "stop" -> playbackManager.stop()
-            "next", "next_track" -> playbackManager.skipToNext()
-            "previous", "previous_track" -> playbackManager.skipToPrevious()
-            "toggle" -> playbackManager.togglePlayPause()
-            "media_play_pause" -> playbackManager.togglePlayPause()
+        // MediaController methods must be called on main thread
+        mainScope.launch {
+            when (command.lowercase()) {
+                "play" -> playbackManager.play()
+                "pause" -> playbackManager.pause()
+                "stop" -> playbackManager.stop()
+                "next", "next_track" -> playbackManager.skipToNext()
+                "previous", "previous_track" -> playbackManager.skipToPrevious()
+                "toggle" -> playbackManager.togglePlayPause()
+                "media_play_pause" -> playbackManager.togglePlayPause()
+            }
         }
     }
 }
