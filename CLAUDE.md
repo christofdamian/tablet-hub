@@ -6,6 +6,15 @@
 - Do not include yourself (Co-Authored-By) in commit messages
 - Always write a test when fixing a bug
 
+## Debugging
+
+Use adb from Android SDK (not in PATH):
+```bash
+~/Android/Sdk/platform-tools/adb devices
+~/Android/Sdk/platform-tools/adb logcat -d -t 100 | grep tablethub
+~/Android/Sdk/platform-tools/adb logcat --pid=$(~/Android/Sdk/platform-tools/adb shell pidof net.damian.tablethub)
+```
+
 ## Project Overview
 
 TabletHub is an Android tablet app designed as an always-on dashboard to replace a Nest Hub. It serves as a bedside/kitchen dashboard with alarm clock, Home Assistant controls via MQTT, and Plex music playback.
