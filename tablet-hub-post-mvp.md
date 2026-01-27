@@ -230,12 +230,46 @@ automation:
 
 ---
 
+## 6. Night Mode Enhancements
+
+Improvements to the existing night mode feature.
+
+**Settings UI:**
+- Add settings screen to configure:
+  - Lux threshold for auto-switching (default: 15)
+  - Hysteresis value (default: 5)
+  - Night brightness level (default: 5/255)
+  - Enable/disable auto mode vs manual only
+
+**Brightness Restoration:**
+- Remember brightness level before entering night mode
+- Restore previous brightness when exiting night mode
+- Currently exits at night brightness (5) requiring manual adjustment
+
+**Gradual Transitions:**
+- Fade between normal and night mode instead of instant switch
+- Smooth brightness transitions over 1-2 seconds
+- Optional color temperature shift animation
+
+**Sensor Calibration:**
+- Different devices have different light sensor sensitivities
+- Add calibration option or per-device presets
+- "Calibrate in dark room" wizard
+
+**Time-Based Schedule:**
+- In addition to sensor-based switching
+- Configure night mode hours (e.g., 22:00-07:00)
+- Combine with sensor: schedule AND dark = night mode
+
+---
+
 ## Priority Order
 
 1. **Weather widget** – easiest, just subscribe to HA sensors via MQTT
 2. **TTS support** – mostly free via existing media_player, minor audio focus handling
 3. **HA-driven alarm timing** – no tablet changes, just HA templates
-4. **Google Photos background** – most complex (OAuth, caching, overlay rendering)
+4. **Night mode settings UI** – configure thresholds and brightness
+5. **Google Photos background** – most complex (OAuth, caching, overlay rendering)
 
 ---
 
