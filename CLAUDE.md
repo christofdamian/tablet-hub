@@ -45,6 +45,7 @@ The app registers as an HA device via MQTT discovery, exposing:
 - `switch.tablethub_alarm_*`
 - `media_player.tablethub`
 - `switch.tablethub_screen`
+- `switch.tablethub_night_mode`
 - `light.tablethub_brightness`
 - `sensor.tablethub_battery`
 
@@ -60,4 +61,4 @@ app/src/main/java/com/tablethub/
 └── util/        # Utilities
 ```
 
-See `tablet-hub-spec.md` for full specification.
+See `tablet-hub-spec.md` for full specification and `tablet-hub-post-mvp.md` for future enhancements.
