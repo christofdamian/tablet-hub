@@ -46,7 +46,6 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
-            excludes += "/META-INF/DEPENDENCIES"
         }
     }
 }
@@ -110,20 +109,12 @@ dependencies {
     // Image Loading
     implementation(libs.coil.compose)
 
-    // Google Identity Services
-    implementation(libs.play.services.auth)
-    implementation(libs.credentials)
-    implementation(libs.credentials.play.services.auth)
-    implementation(libs.googleid)
-    implementation(libs.google.api.client.android)
-
     // WorkManager
     implementation(libs.work.runtime.ktx)
 
     // Coroutines
     implementation(libs.coroutines.core)
     implementation(libs.coroutines.android)
-    implementation(libs.coroutines.play.services)
 
     // Testing
     testImplementation(libs.junit)

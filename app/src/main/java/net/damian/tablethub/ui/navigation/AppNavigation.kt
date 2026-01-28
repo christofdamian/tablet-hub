@@ -13,14 +13,15 @@ import net.damian.tablethub.ui.components.PageIndicator
 import net.damian.tablethub.ui.screens.buttons.ButtonsScreen
 import net.damian.tablethub.ui.screens.clock.ClockScreen
 import net.damian.tablethub.ui.screens.player.PlayerScreen
-import net.damian.tablethub.ui.screens.slideshow.SlideshowScreen
 
 enum class Screen {
     Clock,
     Buttons,
-    Player,
-    Slideshow
+    Player
 }
+
+// Large page count for infinite scrolling effect
+private const val INFINITE_PAGE_COUNT = 10000
 
 @Composable
 fun AppNavigation(
@@ -30,9 +31,11 @@ fun AppNavigation(
     onSettingsClick: () -> Unit = {}
 ) {
     val screens = Screen.entries
+    // Start in the middle, aligned to Clock screen (index 0)
+    val initialPage = (INFINITE_PAGE_COUNT / 2 / screens.size) * screens.size
     val pagerState = rememberPagerState(
-        initialPage = 0,
-        pageCount = { screens.size }
+        initialPage = initialPage,
+        pageCount = { INFINITE_PAGE_COUNT }
     )
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -40,7 +43,8 @@ fun AppNavigation(
             state = pagerState,
             modifier = Modifier.fillMaxSize()
         ) { page ->
-            when (screens[page]) {
+            val screenIndex = page.mod(screens.size)
+            when (screens[screenIndex]) {
                 Screen.Clock -> ClockScreen(
                     isNightModeActive = isNightModeActive,
                     onNightModeToggle = onNightModeToggle,
@@ -48,13 +52,12 @@ fun AppNavigation(
                 )
                 Screen.Buttons -> ButtonsScreen()
                 Screen.Player -> PlayerScreen()
-                Screen.Slideshow -> SlideshowScreen()
             }
         }
 
         PageIndicator(
             pageCount = screens.size,
-            currentPage = pagerState.currentPage,
+            currentPage = pagerState.currentPage.mod(screens.size),
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 24.dp)

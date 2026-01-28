@@ -162,7 +162,7 @@ class NightModeManager @Inject constructor(
  */
 data class NightModeState(
     val isManualEnabled: Boolean = false,
-    val isAutoEnabled: Boolean = true,
+    val isAutoEnabled: Boolean = false,  // Default to false to avoid sensor issues
     val isActive: Boolean = false,
     val currentLux: Float = 100f,
     val luxThreshold: Float = 15f,
