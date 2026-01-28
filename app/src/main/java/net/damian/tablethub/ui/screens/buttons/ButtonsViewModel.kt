@@ -7,27 +7,23 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import net.damian.tablethub.data.local.entity.ButtonEntity
 import net.damian.tablethub.data.repository.ButtonRepository
-import net.damian.tablethub.service.mqtt.EntityState
-import net.damian.tablethub.service.mqtt.EntityStateTracker
 import net.damian.tablethub.service.mqtt.HaServiceCaller
 import javax.inject.Inject
 
 @HiltViewModel
 class ButtonsViewModel @Inject constructor(
     private val buttonRepository: ButtonRepository,
-    private val haServiceCaller: HaServiceCaller,
-    private val entityStateTracker: EntityStateTracker
+    private val haServiceCaller: HaServiceCaller
 ) : ViewModel() {
 
     companion object {
         const val GRID_COLUMNS = 3
-        const val GRID_ROWS = 4
+        const val GRID_ROWS = 2
         const val TOTAL_BUTTONS = GRID_COLUMNS * GRID_ROWS
     }
 
@@ -37,22 +33,6 @@ class ButtonsViewModel @Inject constructor(
 
     val buttons: StateFlow<Map<Int, ButtonEntity>> = buttonsFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
-
-    // Entity states for buttons that track state
-    val entityStates: StateFlow<Map<String, EntityState>> = entityStateTracker.entityStates
-
-    init {
-        // Track entities for buttons that have trackEntityState enabled
-        viewModelScope.launch {
-            buttonsFlow.collect { buttonsMap ->
-                buttonsMap.values
-                    .filter { it.trackEntityState && it.entityId.isNotBlank() }
-                    .forEach { button ->
-                        entityStateTracker.trackEntity(button.entityId)
-                    }
-            }
-        }
-    }
 
     private val _editingButton = MutableStateFlow<ButtonEntity?>(null)
     val editingButton: StateFlow<ButtonEntity?> = _editingButton.asStateFlow()
@@ -101,22 +81,7 @@ class ButtonsViewModel @Inject constructor(
 
     private fun executeButton(button: ButtonEntity) {
         viewModelScope.launch {
-            // Optimistic state update for toggle actions
-            if (button.trackEntityState && button.entityId.isNotBlank()) {
-                if (button.actionType == ButtonEntity.ActionType.TOGGLE_ENTITY ||
-                    button.service.lowercase() == "toggle") {
-                    entityStateTracker.toggleEntityOptimistic(button.entityId)
-                }
-            }
-
             haServiceCaller.callService(button)
         }
-    }
-
-    /**
-     * Check if an entity is currently "on".
-     */
-    fun isEntityOn(entityId: String): Boolean {
-        return entityStateTracker.isEntityOn(entityId)
     }
 }

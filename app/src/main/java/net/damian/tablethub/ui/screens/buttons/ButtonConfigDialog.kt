@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -21,7 +19,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -48,7 +45,6 @@ fun ButtonConfigDialog(
     var service by remember { mutableStateOf(button.service) }
     var entityId by remember { mutableStateOf(button.entityId) }
     var serviceData by remember { mutableStateOf(button.serviceData) }
-    var trackEntityState by remember { mutableStateOf(button.trackEntityState) }
 
     var actionTypeExpanded by remember { mutableStateOf(false) }
     var domainExpanded by remember { mutableStateOf(false) }
@@ -254,31 +250,6 @@ fun ButtonConfigDialog(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Track entity state toggle
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Show entity state",
-                            style = MaterialTheme.typography.bodyLarge
-                        )
-                        Text(
-                            text = "Button color reflects on/off state",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Switch(
-                        checked = trackEntityState,
-                        onCheckedChange = { trackEntityState = it }
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
                 // Service data (advanced)
                 OutlinedTextField(
                     value = serviceData,
@@ -315,8 +286,7 @@ fun ButtonConfigDialog(
                                 domain = domain,
                                 service = service,
                                 entityId = entityId,
-                                serviceData = serviceData,
-                                trackEntityState = trackEntityState
+                                serviceData = serviceData
                             )
                         )
                     }
