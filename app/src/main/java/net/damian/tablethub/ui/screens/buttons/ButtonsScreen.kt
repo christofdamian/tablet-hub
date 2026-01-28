@@ -5,15 +5,13 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Blinds
@@ -86,27 +84,34 @@ private fun ButtonGrid(
     onButtonLongPress: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(ButtonsViewModel.GRID_COLUMNS),
+    Column(
         modifier = modifier,
-        contentPadding = PaddingValues(8.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        items((0 until ButtonsViewModel.TOTAL_BUTTONS).toList()) { position ->
-            val button = buttons[position]
-            ActionButton(
-                button = button,
-                onClick = { onButtonClick(position) },
-                onLongPress = { onButtonLongPress(position) }
-            )
+        for (row in 0 until ButtonsViewModel.GRID_ROWS) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                for (col in 0 until ButtonsViewModel.GRID_COLUMNS) {
+                    val position = row * ButtonsViewModel.GRID_COLUMNS + col
+                    val button = buttons[position]
+                    ActionButton(
+                        button = button,
+                        onClick = { onButtonClick(position) },
+                        onLongPress = { onButtonLongPress(position) }
+                    )
+                }
+            }
         }
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ActionButton(
+private fun RowScope.ActionButton(
     button: ButtonEntity?,
     onClick: () -> Unit,
     onLongPress: () -> Unit,
@@ -129,7 +134,8 @@ private fun ActionButton(
 
     Card(
         modifier = modifier
-            .aspectRatio(1f)
+            .weight(1f)
+            .fillMaxHeight()
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = {
