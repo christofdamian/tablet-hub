@@ -9,7 +9,7 @@ import net.damian.tablethub.data.local.entity.ButtonEntity
 
 @Database(
     entities = [AlarmEntity::class, ButtonEntity::class],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

@@ -81,7 +81,7 @@ class ButtonsViewModel @Inject constructor(
 
     private fun executeButton(button: ButtonEntity) {
         viewModelScope.launch {
-            haServiceCaller.callService(button)
+            haServiceCaller.sendButtonPress(button)
         }
     }
 }
