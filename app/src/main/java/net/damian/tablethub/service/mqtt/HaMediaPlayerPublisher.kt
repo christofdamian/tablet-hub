@@ -115,7 +115,7 @@ class HaMediaPlayerPublisher @Inject constructor(
                 put("media_position_updated_at", System.currentTimeMillis() / 1000.0)
 
                 // Album art URL
-                plexRepository.getArtworkUrl(track.thumb)?.let { artUrl ->
+                plexRepository.getArtworkUrl(track.effectiveThumb)?.let { artUrl ->
                     put("media_image_url", artUrl)
                 }
             }

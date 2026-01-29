@@ -64,7 +64,7 @@ fun NowPlayingBar(
 
     NowPlayingBarContent(
         playbackState = playbackState,
-        artworkUrl = viewModel.getArtworkUrl(playbackState.currentTrack?.thumb),
+        artworkUrl = viewModel.getArtworkUrl(playbackState.currentTrack?.effectiveThumb),
         onPlayPause = viewModel::playPause,
         onNext = viewModel::skipNext,
         onPrevious = viewModel::skipPrevious,

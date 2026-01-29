@@ -87,6 +87,8 @@ data class PlexMetadata(
     val grandparentTitle: String? = null, // Artist name for tracks
     val summary: String? = null,
     val thumb: String? = null,
+    val parentThumb: String? = null, // Album artwork for tracks
+    val grandparentThumb: String? = null, // Artist artwork for tracks
     val art: String? = null,
     val duration: Long? = null, // in milliseconds
     val index: Int? = null, // Track number
@@ -95,7 +97,11 @@ data class PlexMetadata(
     val addedAt: Long? = null,
     val leafCount: Int? = null, // Number of items (for playlists)
     @Json(name = "Media") val media: List<PlexMedia>? = null
-)
+) {
+    /** Get the best available artwork: own thumb, parent (album), or grandparent (artist) */
+    val effectiveThumb: String?
+        get() = thumb ?: parentThumb ?: grandparentThumb
+}
 
 @JsonClass(generateAdapter = true)
 data class PlexMedia(

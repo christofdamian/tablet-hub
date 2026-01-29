@@ -89,7 +89,7 @@ class PlaybackManager @Inject constructor(
             currentIndex = currentIndex
         )
 
-        val artworkUrl = plexRepository.getArtworkUrl(track.thumb)
+        val artworkUrl = plexRepository.getArtworkUrl(track.effectiveThumb)
 
         val mediaItem = MediaItem.Builder()
             .setUri(streamUrl)
@@ -119,7 +119,7 @@ class PlaybackManager @Inject constructor(
                 track.media?.firstOrNull()?.parts?.firstOrNull()?.key ?: return@mapNotNull null
             ) ?: return@mapNotNull null
 
-            val artworkUrl = plexRepository.getArtworkUrl(track.thumb)
+            val artworkUrl = plexRepository.getArtworkUrl(track.effectiveThumb)
 
             MediaItem.Builder()
                 .setUri(streamUrl)

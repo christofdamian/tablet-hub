@@ -218,7 +218,7 @@ private fun ArtistGrid(
             MediaCard(
                 title = artist.title,
                 subtitle = null,
-                imageUrl = getArtworkUrl(artist.thumb),
+                imageUrl = getArtworkUrl(artist.effectiveThumb),
                 onClick = { onArtistClick(artist) },
                 placeholder = Icons.Default.Person
             )
@@ -247,7 +247,7 @@ private fun AlbumGrid(
             MediaCard(
                 title = album.title,
                 subtitle = album.parentTitle ?: album.year?.toString(),
-                imageUrl = getArtworkUrl(album.thumb),
+                imageUrl = getArtworkUrl(album.effectiveThumb),
                 onClick = { onAlbumClick(album) },
                 placeholder = Icons.Default.Album
             )
@@ -274,7 +274,7 @@ private fun TrackList(
             TrackItem(
                 track = track,
                 onClick = { onTrackClick(track) },
-                imageUrl = getArtworkUrl(track.thumb)
+                imageUrl = getArtworkUrl(track.effectiveThumb)
             )
         }
     }
@@ -389,7 +389,7 @@ private fun PlaylistList(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     AsyncImage(
-                        model = getArtworkUrl(playlist.thumb),
+                        model = getArtworkUrl(playlist.effectiveThumb),
                         contentDescription = null,
                         modifier = Modifier
                             .size(56.dp)
