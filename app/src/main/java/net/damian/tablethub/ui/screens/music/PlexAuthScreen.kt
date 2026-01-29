@@ -41,6 +41,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import net.damian.tablethub.plex.PlexAuthState
 import net.damian.tablethub.plex.model.PlexDevice
+import net.damian.tablethub.ui.theme.Dimensions
 
 @Composable
 fun PlexAuthScreen(
@@ -110,7 +111,7 @@ private fun NotAuthenticatedContent(
         Icon(
             imageVector = Icons.Default.MusicNote,
             contentDescription = null,
-            modifier = Modifier.size(80.dp),
+            modifier = Modifier.size(Dimensions.AlarmTopIconSize),
             tint = MaterialTheme.colorScheme.primary
         )
 
@@ -240,7 +241,7 @@ private fun SelectServerContent(
         Icon(
             imageVector = Icons.Default.Check,
             contentDescription = null,
-            modifier = Modifier.size(48.dp),
+            modifier = Modifier.size(Dimensions.IconSizeXLarge),
             tint = MaterialTheme.colorScheme.primary
         )
 
@@ -294,7 +295,7 @@ private fun ServerCard(
             Icon(
                 imageVector = Icons.Default.Computer,
                 contentDescription = null,
-                modifier = Modifier.size(40.dp),
+                modifier = Modifier.size(Dimensions.IconSizeLarge),
                 tint = MaterialTheme.colorScheme.primary
             )
 
@@ -338,7 +339,7 @@ private fun ErrorContent(
         Icon(
             imageVector = Icons.Default.Error,
             contentDescription = null,
-            modifier = Modifier.size(64.dp),
+            modifier = Modifier.size(Dimensions.AlarmTopIconSize),
             tint = MaterialTheme.colorScheme.error
         )
 

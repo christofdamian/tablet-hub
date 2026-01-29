@@ -46,6 +46,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import net.damian.tablethub.data.local.entity.ButtonEntity
+import net.damian.tablethub.ui.theme.Dimensions
 
 @Composable
 fun ButtonsScreen(
@@ -159,7 +160,7 @@ private fun RowScope.ActionButton(
                     Icons.Default.Add
                 },
                 contentDescription = button?.label,
-                modifier = Modifier.size(40.dp),
+                modifier = Modifier.size(Dimensions.ShortcutButtonIconSize),
                 tint = contentColor
             )
 

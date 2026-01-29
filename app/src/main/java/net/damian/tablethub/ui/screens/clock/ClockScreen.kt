@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Brightness2
@@ -27,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import net.damian.tablethub.ui.components.ClockDisplay
 import net.damian.tablethub.ui.components.NextAlarmDisplay
+import net.damian.tablethub.ui.theme.Dimensions
 
 @Composable
 fun ClockScreen(
@@ -67,10 +69,12 @@ fun ClockScreen(
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(top = 48.dp, start = 16.dp)
+                .size(Dimensions.IconButtonSize)
         ) {
             Icon(
                 imageVector = Icons.Default.Settings,
                 contentDescription = "Settings",
+                modifier = Modifier.size(Dimensions.IconSizeDefault),
                 tint = MaterialTheme.colorScheme.onSurface
             )
         }
@@ -81,10 +85,12 @@ fun ClockScreen(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(top = 48.dp, end = 16.dp)
+                .size(Dimensions.IconButtonSize)
         ) {
             Icon(
                 imageVector = if (isNightModeActive) Icons.Default.Brightness7 else Icons.Default.Brightness2,
                 contentDescription = if (isNightModeActive) "Exit night mode" else "Enter night mode",
+                modifier = Modifier.size(Dimensions.IconSizeDefault),
                 tint = MaterialTheme.colorScheme.onSurface
             )
         }
@@ -99,6 +105,7 @@ fun ClockScreen(
             Icon(
                 imageVector = Icons.Default.Alarm,
                 contentDescription = "Manage alarms",
+                modifier = Modifier.size(Dimensions.FabIconSize),
                 tint = MaterialTheme.colorScheme.onPrimaryContainer
             )
         }

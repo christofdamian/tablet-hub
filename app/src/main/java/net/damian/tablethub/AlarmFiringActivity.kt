@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import net.damian.tablethub.service.alarm.AlarmReceiver
 import net.damian.tablethub.service.alarm.AlarmService
+import net.damian.tablethub.ui.theme.Dimensions
 import net.damian.tablethub.ui.theme.TabletHubTheme
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -144,7 +145,7 @@ fun AlarmFiringScreen(
                 Icon(
                     imageVector = Icons.Default.Alarm,
                     contentDescription = null,
-                    modifier = Modifier.size(80.dp),
+                    modifier = Modifier.size(Dimensions.AlarmTopIconSize),
                     tint = MaterialTheme.colorScheme.primary
                 )
 
@@ -175,7 +176,7 @@ fun AlarmFiringScreen(
                     OutlinedButton(
                         onClick = onSnooze,
                         modifier = Modifier
-                            .size(120.dp),
+                            .size(Dimensions.AlarmButtonSize),
                         shape = CircleShape
                     ) {
                         Column(
@@ -184,7 +185,7 @@ fun AlarmFiringScreen(
                             Icon(
                                 imageVector = Icons.Default.Snooze,
                                 contentDescription = "Snooze",
-                                modifier = Modifier.size(32.dp)
+                                modifier = Modifier.size(Dimensions.AlarmButtonIconSize)
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text("Snooze")
@@ -196,7 +197,7 @@ fun AlarmFiringScreen(
                     Button(
                         onClick = onDismiss,
                         modifier = Modifier
-                            .size(120.dp),
+                            .size(Dimensions.AlarmButtonSize),
                         shape = CircleShape,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.error
@@ -208,7 +209,7 @@ fun AlarmFiringScreen(
                             Icon(
                                 imageVector = Icons.Default.AlarmOff,
                                 contentDescription = "Dismiss",
-                                modifier = Modifier.size(32.dp)
+                                modifier = Modifier.size(Dimensions.AlarmButtonIconSize)
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text("Dismiss")

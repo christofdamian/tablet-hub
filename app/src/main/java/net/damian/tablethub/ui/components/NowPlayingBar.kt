@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import kotlinx.coroutines.delay
 import net.damian.tablethub.service.music.PlaybackState
+import net.damian.tablethub.ui.theme.Dimensions
 
 @Composable
 fun NowPlayingBar(
@@ -178,18 +179,18 @@ fun NowPlayingBar(
                 ) {
                     IconButton(
                         onClick = onPrevious,
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier.size(Dimensions.MediaControlButtonSize)
                     ) {
                         Icon(
                             imageVector = Icons.Default.SkipPrevious,
                             contentDescription = "Previous",
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(Dimensions.MediaControlIconSize)
                         )
                     }
 
                     FilledIconButton(
                         onClick = onPlayPause,
-                        modifier = Modifier.size(56.dp),
+                        modifier = Modifier.size(Dimensions.MediaControlPlayButtonSize),
                         colors = IconButtonDefaults.filledIconButtonColors(
                             containerColor = MaterialTheme.colorScheme.primary
                         )
@@ -201,18 +202,18 @@ fun NowPlayingBar(
                                 Icons.Default.PlayArrow
                             },
                             contentDescription = if (playbackState.isPlaying) "Pause" else "Play",
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(Dimensions.MediaControlIconSize)
                         )
                     }
 
                     IconButton(
                         onClick = onNext,
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier.size(Dimensions.MediaControlButtonSize)
                     ) {
                         Icon(
                             imageVector = Icons.Default.SkipNext,
                             contentDescription = "Next",
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(Dimensions.MediaControlIconSize)
                         )
                     }
                 }

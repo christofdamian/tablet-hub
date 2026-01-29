@@ -47,6 +47,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import net.damian.tablethub.service.mqtt.MqttConnectionState
+import net.damian.tablethub.ui.theme.Dimensions
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -86,13 +87,27 @@ fun SettingsScreen(
             TopAppBar(
                 title = { Text("Settings") },
                 navigationIcon = {
-                    IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = "Close")
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.size(Dimensions.IconButtonSize)
+                    ) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "Close",
+                            modifier = Modifier.size(Dimensions.IconSizeDefault)
+                        )
                     }
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.saveSettings() }) {
-                        Icon(Icons.Default.Save, contentDescription = "Save")
+                    IconButton(
+                        onClick = { viewModel.saveSettings() },
+                        modifier = Modifier.size(Dimensions.IconButtonSize)
+                    ) {
+                        Icon(
+                            Icons.Default.Save,
+                            contentDescription = "Save",
+                            modifier = Modifier.size(Dimensions.IconSizeDefault)
+                        )
                     }
                 }
             )

@@ -53,6 +53,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import net.damian.tablethub.plex.model.PlexMetadata
 import net.damian.tablethub.ui.components.NowPlayingBar
+import net.damian.tablethub.ui.theme.Dimensions
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -86,9 +87,14 @@ fun MusicLibraryScreen(
                             } else {
                                 viewModel.clearArtistSelection()
                             }
-                        }
+                        },
+                        modifier = Modifier.size(Dimensions.IconButtonSize)
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            modifier = Modifier.size(Dimensions.IconSizeDefault)
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
