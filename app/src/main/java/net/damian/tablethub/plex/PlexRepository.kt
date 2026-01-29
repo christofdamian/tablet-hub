@@ -167,6 +167,28 @@ class PlexRepository @Inject constructor(
     }
 
     /**
+     * Get all albums in a music library.
+     */
+    suspend fun getAllAlbums(sectionId: String): Result<List<PlexMetadata>> {
+        val api = serverApi ?: return Result.failure(Exception("Not connected to server"))
+        val authToken = token ?: return Result.failure(Exception("Not authenticated"))
+
+        return try {
+            val response = api.getAlbums(sectionId, authToken)
+            if (response.isSuccessful) {
+                val albums = response.body()?.mediaContainer?.metadata ?: emptyList()
+                Log.d(TAG, "Found ${albums.size} albums")
+                Result.success(albums)
+            } else {
+                Result.failure(Exception("Failed to get albums: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting albums", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
      * Get recently added items.
      */
     suspend fun getRecentlyAdded(sectionId: String): Result<List<PlexMetadata>> {

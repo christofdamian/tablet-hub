@@ -29,9 +29,12 @@ data class MusicLibraryState(
     val artists: List<PlexMetadata> = emptyList(),
     val selectedArtist: PlexMetadata? = null,
     val albums: List<PlexMetadata> = emptyList(),
+    val allAlbums: List<PlexMetadata> = emptyList(),
     val selectedAlbum: PlexMetadata? = null,
     val tracks: List<PlexMetadata> = emptyList(),
     val playlists: List<PlexMetadata> = emptyList(),
+    val selectedPlaylist: PlexMetadata? = null,
+    val playlistTracks: List<PlexMetadata> = emptyList(),
     val recentlyAdded: List<PlexMetadata> = emptyList()
 )
 
@@ -74,7 +77,7 @@ class MusicLibraryViewModel @Inject constructor(
         _selectedTab.value = tab
         when (tab) {
             MusicTab.Artists -> if (_state.value.artists.isEmpty()) loadArtists()
-            MusicTab.Albums -> {} // Albums shown per artist
+            MusicTab.Albums -> if (_state.value.allAlbums.isEmpty()) loadAllAlbums()
             MusicTab.Playlists -> if (_state.value.playlists.isEmpty()) loadPlaylists()
             MusicTab.Recent -> if (_state.value.recentlyAdded.isEmpty()) loadRecentlyAdded()
         }
@@ -185,6 +188,26 @@ class MusicLibraryViewModel @Inject constructor(
         }
     }
 
+    private fun loadAllAlbums() {
+        val libraryId = _state.value.selectedLibraryId ?: return
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoading = true, error = null)
+            plexRepository.getAllAlbums(libraryId)
+                .onSuccess { albums ->
+                    _state.value = _state.value.copy(
+                        isLoading = false,
+                        allAlbums = albums
+                    )
+                }
+                .onFailure { error ->
+                    _state.value = _state.value.copy(
+                        isLoading = false,
+                        error = error.message
+                    )
+                }
+        }
+    }
+
     private fun loadPlaylists() {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, error = null)
@@ -202,6 +225,40 @@ class MusicLibraryViewModel @Inject constructor(
                     )
                 }
         }
+    }
+
+    fun selectPlaylist(playlist: PlexMetadata) {
+        _state.value = _state.value.copy(
+            selectedPlaylist = playlist,
+            playlistTracks = emptyList()
+        )
+        loadPlaylistTracks(playlist.ratingKey)
+    }
+
+    private fun loadPlaylistTracks(playlistRatingKey: String) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoading = true, error = null)
+            plexRepository.getPlaylistTracks(playlistRatingKey)
+                .onSuccess { tracks ->
+                    _state.value = _state.value.copy(
+                        isLoading = false,
+                        playlistTracks = tracks
+                    )
+                }
+                .onFailure { error ->
+                    _state.value = _state.value.copy(
+                        isLoading = false,
+                        error = error.message
+                    )
+                }
+        }
+    }
+
+    fun clearPlaylistSelection() {
+        _state.value = _state.value.copy(
+            selectedPlaylist = null,
+            playlistTracks = emptyList()
+        )
     }
 
     private fun loadRecentlyAdded() {
@@ -237,6 +294,11 @@ class MusicLibraryViewModel @Inject constructor(
     // Playback controls
     fun playTrack(track: PlexMetadata) {
         val queue = _state.value.tracks.ifEmpty { listOf(track) }
+        playbackManager.playQueue(queue, queue.indexOf(track).coerceAtLeast(0))
+    }
+
+    fun playPlaylistTrack(track: PlexMetadata) {
+        val queue = _state.value.playlistTracks.ifEmpty { listOf(track) }
         playbackManager.playQueue(queue, queue.indexOf(track).coerceAtLeast(0))
     }
 

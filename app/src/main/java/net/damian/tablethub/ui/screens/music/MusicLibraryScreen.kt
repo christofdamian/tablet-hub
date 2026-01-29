@@ -67,11 +67,12 @@ fun MusicLibraryScreen(
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Top bar with back navigation when in detail views
-        if (state.selectedArtist != null || state.selectedAlbum != null) {
+        if (state.selectedArtist != null || state.selectedAlbum != null || state.selectedPlaylist != null) {
             TopAppBar(
                 title = {
                     Text(
                         text = state.selectedAlbum?.title
+                            ?: state.selectedPlaylist?.title
                             ?: state.selectedArtist?.title
                             ?: "Music",
                         maxLines = 1,
@@ -81,10 +82,10 @@ fun MusicLibraryScreen(
                 navigationIcon = {
                     IconButton(
                         onClick = {
-                            if (state.selectedAlbum != null) {
-                                viewModel.clearAlbumSelection()
-                            } else {
-                                viewModel.clearArtistSelection()
+                            when {
+                                state.selectedAlbum != null -> viewModel.clearAlbumSelection()
+                                state.selectedPlaylist != null -> viewModel.clearPlaylistSelection()
+                                else -> viewModel.clearArtistSelection()
                             }
                         },
                         modifier = Modifier.size(Dimensions.IconButtonSize)
@@ -146,6 +147,14 @@ fun MusicLibraryScreen(
                     )
                 }
 
+                state.selectedPlaylist != null -> {
+                    TrackList(
+                        tracks = state.playlistTracks,
+                        onTrackClick = { viewModel.playPlaylistTrack(it) },
+                        getArtworkUrl = { viewModel.getArtworkUrl(it) }
+                    )
+                }
+
                 state.selectedArtist != null -> {
                     AlbumGrid(
                         albums = state.albums,
@@ -166,7 +175,7 @@ fun MusicLibraryScreen(
 
                         MusicTab.Albums -> {
                             AlbumGrid(
-                                albums = state.recentlyAdded.filter { it.type == "album" },
+                                albums = state.allAlbums,
                                 onAlbumClick = { viewModel.selectAlbum(it) },
                                 getArtworkUrl = { viewModel.getArtworkUrl(it) }
                             )
@@ -175,7 +184,7 @@ fun MusicLibraryScreen(
                         MusicTab.Playlists -> {
                             PlaylistList(
                                 playlists = state.playlists,
-                                onPlaylistClick = { /* TODO: Load playlist tracks */ },
+                                onPlaylistClick = { viewModel.selectPlaylist(it) },
                                 getArtworkUrl = { viewModel.getArtworkUrl(it) }
                             )
                         }
