@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import net.damian.tablethub.ui.components.ClockDisplay
 import net.damian.tablethub.ui.components.NextAlarmDisplay
+import net.damian.tablethub.ui.components.NowPlayingBar
 import net.damian.tablethub.ui.theme.Dimensions
 
 @Composable
@@ -45,70 +46,77 @@ fun ClockScreen(
 
     var showAlarmList by remember { mutableStateOf(false) }
 
-    Box(
-        modifier = modifier.fillMaxSize()
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .clickable { showAlarmList = true },
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+    Column(modifier = modifier.fillMaxSize()) {
+        // Main content area
+        Box(
+            modifier = Modifier.weight(1f)
         ) {
-            ClockDisplay()
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable { showAlarmList = true },
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                ClockDisplay()
 
-            NextAlarmDisplay(
-                nextAlarmText = nextAlarmText,
-                modifier = Modifier.padding(top = 32.dp)
-            )
+                NextAlarmDisplay(
+                    nextAlarmText = nextAlarmText,
+                    modifier = Modifier.padding(top = 32.dp)
+                )
+            }
+
+            // Settings button (top-left)
+            IconButton(
+                onClick = onSettingsClick,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(top = 48.dp, start = 16.dp)
+                    .size(Dimensions.IconButtonSize)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "Settings",
+                    modifier = Modifier.size(Dimensions.IconSizeDefault),
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            // Night mode toggle button (top-right)
+            IconButton(
+                onClick = onNightModeToggle,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 48.dp, end = 16.dp)
+                    .size(Dimensions.IconButtonSize)
+            ) {
+                Icon(
+                    imageVector = if (isNightModeActive) Icons.Default.Brightness7 else Icons.Default.Brightness2,
+                    contentDescription = if (isNightModeActive) "Exit night mode" else "Enter night mode",
+                    modifier = Modifier.size(Dimensions.IconSizeDefault),
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            // Alarm FAB (bottom-left)
+            FloatingActionButton(
+                onClick = { showAlarmList = true },
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(start = 24.dp, bottom = 24.dp),
+                containerColor = MaterialTheme.colorScheme.primaryContainer
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Alarm,
+                    contentDescription = "Manage alarms",
+                    modifier = Modifier.size(Dimensions.FabIconSize),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
         }
 
-        // Settings button (top-left)
-        IconButton(
-            onClick = onSettingsClick,
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(top = 48.dp, start = 16.dp)
-                .size(Dimensions.IconButtonSize)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Settings,
-                contentDescription = "Settings",
-                modifier = Modifier.size(Dimensions.IconSizeDefault),
-                tint = MaterialTheme.colorScheme.onSurface
-            )
-        }
-
-        // Night mode toggle button (top-right)
-        IconButton(
-            onClick = onNightModeToggle,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = 48.dp, end = 16.dp)
-                .size(Dimensions.IconButtonSize)
-        ) {
-            Icon(
-                imageVector = if (isNightModeActive) Icons.Default.Brightness7 else Icons.Default.Brightness2,
-                contentDescription = if (isNightModeActive) "Exit night mode" else "Enter night mode",
-                modifier = Modifier.size(Dimensions.IconSizeDefault),
-                tint = MaterialTheme.colorScheme.onSurface
-            )
-        }
-
-        FloatingActionButton(
-            onClick = { showAlarmList = true },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 24.dp, bottom = 80.dp),
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        ) {
-            Icon(
-                imageVector = Icons.Default.Alarm,
-                contentDescription = "Manage alarms",
-                modifier = Modifier.size(Dimensions.FabIconSize),
-                tint = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-        }
+        // Now Playing Bar at bottom (self-contained component)
+        NowPlayingBar()
     }
 
     if (showAlarmList) {

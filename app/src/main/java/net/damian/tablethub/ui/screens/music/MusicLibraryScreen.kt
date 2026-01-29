@@ -64,7 +64,6 @@ fun MusicLibraryScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val selectedTab by viewModel.selectedTab.collectAsStateWithLifecycle()
-    val playbackState by viewModel.playbackState.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Top bar with back navigation when in detail views
@@ -193,19 +192,8 @@ fun MusicLibraryScreen(
             }
         }
 
-        // Now Playing Bar
-        if (playbackState.currentTrack != null) {
-            NowPlayingBar(
-                playbackState = playbackState,
-                artworkUrl = viewModel.getArtworkUrl(playbackState.currentTrack?.thumb),
-                onPlayPause = { viewModel.playPause() },
-                onNext = { viewModel.skipNext() },
-                onPrevious = { viewModel.skipPrevious() },
-                getCurrentPosition = { viewModel.getCurrentPosition() },
-                getDuration = { viewModel.getDuration() },
-                onClick = { /* TODO: Open full player */ }
-            )
-        }
+        // Now Playing Bar (self-contained component)
+        NowPlayingBar()
     }
 }
 

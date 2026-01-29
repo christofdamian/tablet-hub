@@ -41,13 +41,46 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import kotlinx.coroutines.delay
 import net.damian.tablethub.service.music.PlaybackState
 import net.damian.tablethub.ui.theme.Dimensions
 
+/**
+ * Self-contained Now Playing bar that can be used on any screen.
+ * Internally manages playback state via its own ViewModel.
+ */
 @Composable
 fun NowPlayingBar(
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit = {},
+    viewModel: NowPlayingViewModel = hiltViewModel()
+) {
+    val playbackState by viewModel.playbackState.collectAsStateWithLifecycle()
+
+    if (playbackState.currentTrack == null) return
+
+    NowPlayingBarContent(
+        playbackState = playbackState,
+        artworkUrl = viewModel.getArtworkUrl(playbackState.currentTrack?.thumb),
+        onPlayPause = viewModel::playPause,
+        onNext = viewModel::skipNext,
+        onPrevious = viewModel::skipPrevious,
+        getCurrentPosition = viewModel::getCurrentPosition,
+        getDuration = viewModel::getDuration,
+        onClick = onClick,
+        modifier = modifier
+    )
+}
+
+/**
+ * Internal implementation of the Now Playing bar UI.
+ * Use [NowPlayingBar] for a self-contained component with its own ViewModel.
+ */
+@Composable
+private fun NowPlayingBarContent(
     playbackState: PlaybackState,
     artworkUrl: String?,
     onPlayPause: () -> Unit,
