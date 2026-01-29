@@ -22,6 +22,7 @@ import kotlinx.coroutines.launch
 import net.damian.tablethub.MainActivity
 import net.damian.tablethub.R
 import net.damian.tablethub.data.preferences.SettingsDataStore
+import net.damian.tablethub.data.repository.ButtonRepository
 import net.damian.tablethub.service.display.NightModeManager
 import javax.inject.Inject
 
@@ -79,6 +80,9 @@ class MqttService : Service() {
 
     @Inject
     lateinit var entityStateTracker: EntityStateTracker
+
+    @Inject
+    lateinit var buttonRepository: ButtonRepository
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var discoveryPublished = false
@@ -155,6 +159,7 @@ class MqttService : Service() {
         serviceScope.launch {
             try {
                 haDiscovery.publishAllDiscoveryMessages()
+                buttonRepository.publishAllButtonDiscovery()
                 discoveryPublished = true
                 Log.d(TAG, "HA discovery messages published")
 

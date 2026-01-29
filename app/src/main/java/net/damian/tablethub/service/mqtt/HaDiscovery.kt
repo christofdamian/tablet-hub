@@ -33,6 +33,7 @@ class HaDiscovery @Inject constructor(
     private val commandTopic: String get() = "tablethub/$deviceId/command"
     private val mediaStateTopic: String get() = "tablethub/$deviceId/media/state"
     private val mediaCommandTopic: String get() = "tablethub/$deviceId/media/command"
+    private val buttonPressTopic: String get() = "tablethub/$deviceId/button/press"
 
     private val deviceInfo: HaDeviceInfo
         get() = HaDeviceInfo(
@@ -227,6 +228,34 @@ class HaDiscovery @Inject constructor(
     fun removeAlarmSwitch(alarmId: Long) {
         val topic = "$HA_DISCOVERY_PREFIX/switch/$deviceId/alarm_$alarmId/config"
         mqttManager.publish(topic, "", retained = true)
+    }
+
+    /**
+     * Publish discovery config for a shortcut button trigger.
+     * Call this when shortcut buttons are configured.
+     */
+    fun publishShortcutButtonTrigger(identifier: String, label: String) {
+        val config = HaDeviceTriggerConfig(
+            automationType = "trigger",
+            type = "button_short_press",
+            subtype = label.ifEmpty { identifier },
+            topic = buttonPressTopic,
+            payload = """{"identifier":"$identifier"}""",
+            device = deviceInfo
+        )
+
+        publishConfig("device_automation", "shortcut_$identifier", config)
+        Log.d(TAG, "Published shortcut button trigger: $identifier")
+    }
+
+    /**
+     * Remove discovery config for a shortcut button trigger.
+     * Call this when shortcut buttons are deleted.
+     */
+    fun removeShortcutButtonTrigger(identifier: String) {
+        val topic = "$HA_DISCOVERY_PREFIX/device_automation/$deviceId/shortcut_$identifier/config"
+        mqttManager.publish(topic, "", retained = true)
+        Log.d(TAG, "Removed shortcut button trigger: $identifier")
     }
 
     private inline fun <reified T> publishConfig(component: String, objectId: String, config: T) {

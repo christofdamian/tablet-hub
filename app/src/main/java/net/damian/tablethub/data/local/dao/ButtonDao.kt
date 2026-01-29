@@ -14,6 +14,9 @@ interface ButtonDao {
     @Query("SELECT * FROM buttons ORDER BY position ASC")
     fun getAllButtons(): Flow<List<ButtonEntity>>
 
+    @Query("SELECT * FROM buttons ORDER BY position ASC")
+    suspend fun getAllButtonsSync(): List<ButtonEntity>
+
     @Query("SELECT * FROM buttons WHERE position = :position")
     suspend fun getButtonAt(position: Int): ButtonEntity?
 

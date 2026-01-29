@@ -85,3 +85,13 @@ data class HaButtonConfig(
     val icon: String? = null,
     @Json(name = "payload_press") val payloadPress: String = "PRESS"
 )
+
+@JsonClass(generateAdapter = true)
+data class HaDeviceTriggerConfig(
+    @Json(name = "automation_type") val automationType: String = "trigger",
+    val type: String = "button_short_press",
+    val subtype: String,
+    val topic: String,
+    val payload: String,
+    val device: HaDeviceInfo
+)
