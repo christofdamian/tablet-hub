@@ -1,5 +1,6 @@
 package net.damian.tablethub.service.mqtt
 
+import android.util.Base64
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -13,11 +14,18 @@ import net.damian.tablethub.data.preferences.SettingsDataStore
 import net.damian.tablethub.plex.PlexRepository
 import net.damian.tablethub.service.music.PlaybackManager
 import net.damian.tablethub.service.music.PlaybackState
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONObject
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Publishes media player state to Home Assistant via MQTT.
+ * Compatible with bkbilly/mqtt_media_player custom integration.
+ * https://github.com/bkbilly/mqtt_media_player
+ */
 @Singleton
 class HaMediaPlayerPublisher @Inject constructor(
     private val mqttManager: MqttManager,
@@ -33,6 +41,11 @@ class HaMediaPlayerPublisher @Inject constructor(
     private val mainScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var isPublishing = false
     private var deviceId: String = "tablethub"
+    private var lastArtworkUrl: String? = null
+    private var cachedArtworkBase64: String? = null
+    private val httpClient = OkHttpClient()
+
+    private val baseTopic: String get() = "tablethub/$deviceId/media"
 
     fun startPublishing() {
         if (isPublishing) return
@@ -55,17 +68,32 @@ class HaMediaPlayerPublisher @Inject constructor(
     }
 
     private fun publishDiscoveryConfig() {
-        val baseTopic = "tablethub/$deviceId"
-
         val config = JSONObject().apply {
             put("name", "TabletHub Music")
             put("unique_id", "${deviceId}_media_player")
             put("object_id", "${deviceId}_media_player")
-            put("state_topic", "$baseTopic/media_player/state")
-            put("command_topic", "$baseTopic/media_player/set")
-            put("availability_topic", "$baseTopic/availability")
-            put("payload_available", "online")
-            put("payload_not_available", "offline")
+
+            // Availability
+            put("availability", JSONObject().apply {
+                put("topic", "tablethub/$deviceId/availability")
+                put("payload_available", "online")
+                put("payload_not_available", "offline")
+            })
+
+            // State topics (what we publish)
+            put("state_state_topic", "$baseTopic/state")
+            put("state_title_topic", "$baseTopic/title")
+            put("state_artist_topic", "$baseTopic/artist")
+            put("state_album_topic", "$baseTopic/album")
+            put("state_duration_topic", "$baseTopic/duration")
+            put("state_position_topic", "$baseTopic/position")
+            put("state_albumart_topic", "$baseTopic/albumart")
+
+            // Command topics (what we listen to)
+            put("command_play_topic", "$baseTopic/cmd/play")
+            put("command_pause_topic", "$baseTopic/cmd/pause")
+            put("command_next_topic", "$baseTopic/cmd/next")
+            put("command_previous_topic", "$baseTopic/cmd/previous")
 
             // Device info
             put("device", JSONObject().apply {
@@ -76,8 +104,11 @@ class HaMediaPlayerPublisher @Inject constructor(
             })
         }
 
+        val topic = "homeassistant/media_player/${deviceId}_music/config"
+        Log.d(TAG, "Publishing media player discovery to: $topic")
+
         mqttManager.publish(
-            topic = "homeassistant/media_player/${deviceId}_player/config",
+            topic = topic,
             payload = config.toString(),
             retained = true
         )
@@ -93,47 +124,63 @@ class HaMediaPlayerPublisher @Inject constructor(
             playbackManager.getCurrentPosition()
         }
 
-        val stateJson = JSONObject().apply {
-            // State: playing, paused, idle
-            put("state", when {
-                state.isPlaying -> "playing"
-                track != null -> "paused"
-                else -> "idle"
-            })
+        // Publish state
+        val playbackState = when {
+            state.isPlaying -> "playing"
+            track != null -> "paused"
+            else -> "idle"
+        }
+        mqttManager.publish("$baseTopic/state", playbackState, retained = true)
 
-            // Media info
-            if (track != null) {
-                put("media_title", track.title)
-                put("media_artist", track.grandparentTitle ?: track.parentTitle ?: "")
-                put("media_album_name", track.parentTitle ?: "")
+        // Publish track info
+        if (track != null) {
+            mqttManager.publish("$baseTopic/title", track.title, retained = true)
+            mqttManager.publish("$baseTopic/artist", track.grandparentTitle ?: track.parentTitle ?: "", retained = true)
+            mqttManager.publish("$baseTopic/album", track.parentTitle ?: "", retained = true)
+            mqttManager.publish("$baseTopic/duration", ((track.duration ?: 0) / 1000).toString(), retained = true)
+            mqttManager.publish("$baseTopic/position", (position / 1000).toString(), retained = true)
 
-                track.duration?.let { duration ->
-                    put("media_duration", duration / 1000) // Convert to seconds
-                }
-
-                put("media_position", position / 1000) // Convert to seconds
-                put("media_position_updated_at", System.currentTimeMillis() / 1000.0)
-
-                // Album art URL
-                plexRepository.getArtworkUrl(track.effectiveThumb)?.let { artUrl ->
-                    put("media_image_url", artUrl)
-                }
+            // Fetch and publish album art as base64
+            val artworkUrl = plexRepository.getArtworkUrl(track.effectiveThumb)
+            if (artworkUrl != null && artworkUrl != lastArtworkUrl) {
+                lastArtworkUrl = artworkUrl
+                fetchAndPublishArtwork(artworkUrl)
+            } else if (artworkUrl == lastArtworkUrl && cachedArtworkBase64 != null) {
+                // Use cached artwork
+                mqttManager.publish("$baseTopic/albumart", cachedArtworkBase64!!, retained = true)
             }
-
-            // Queue info
-            if (state.queue.isNotEmpty()) {
-                put("queue_position", state.currentIndex)
-                put("queue_size", state.queue.size)
-            }
+        } else {
+            // Clear track info when nothing is playing
+            mqttManager.publish("$baseTopic/title", "", retained = true)
+            mqttManager.publish("$baseTopic/artist", "", retained = true)
+            mqttManager.publish("$baseTopic/album", "", retained = true)
+            mqttManager.publish("$baseTopic/duration", "0", retained = true)
+            mqttManager.publish("$baseTopic/position", "0", retained = true)
+            mqttManager.publish("$baseTopic/albumart", "", retained = true)
+            lastArtworkUrl = null
+            cachedArtworkBase64 = null
         }
 
-        mqttManager.publish(
-            topic = "tablethub/$deviceId/media_player/state",
-            payload = stateJson.toString(),
-            retained = true
-        )
+        Log.d(TAG, "Published media player state: $playbackState - ${track?.title ?: "no track"}")
+    }
 
-        Log.d(TAG, "Published media player state: ${if (state.isPlaying) "playing" else "paused"} - ${track?.title ?: "no track"}")
+    private fun fetchAndPublishArtwork(url: String) {
+        scope.launch {
+            try {
+                val request = Request.Builder().url(url).build()
+                val response = httpClient.newCall(request).execute()
+                if (response.isSuccessful) {
+                    val bytes = response.body?.bytes()
+                    if (bytes != null) {
+                        cachedArtworkBase64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
+                        mqttManager.publish("$baseTopic/albumart", cachedArtworkBase64!!, retained = true)
+                        Log.d(TAG, "Published album art (${bytes.size} bytes)")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to fetch album art", e)
+            }
+        }
     }
 
     fun handleCommand(command: String, payload: String?) {
@@ -147,8 +194,7 @@ class HaMediaPlayerPublisher @Inject constructor(
                 "stop" -> playbackManager.stop()
                 "next", "next_track" -> playbackManager.skipToNext()
                 "previous", "previous_track" -> playbackManager.skipToPrevious()
-                "toggle" -> playbackManager.togglePlayPause()
-                "media_play_pause" -> playbackManager.togglePlayPause()
+                "toggle", "playpause" -> playbackManager.togglePlayPause()
             }
         }
     }

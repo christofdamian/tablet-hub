@@ -62,9 +62,16 @@ class MqttCommandHandler @Inject constructor(
     }
 
     private fun handleMessage(message: MqttIncomingMessage) {
-        // Handle media player commands
+        // Handle media player commands (legacy format)
         if (message.topic.endsWith("/media_player/set")) {
             handleMediaPlayerCommand(message.payload)
+            return
+        }
+
+        // Handle media player commands (bkbilly/mqtt_media_player format)
+        if (message.topic.contains("/media/cmd/")) {
+            val command = message.topic.substringAfterLast("/")
+            handleMediaPlayerCommand(command)
             return
         }
 

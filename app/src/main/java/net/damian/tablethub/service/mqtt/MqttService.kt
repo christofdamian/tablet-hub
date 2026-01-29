@@ -178,6 +178,8 @@ class MqttService : Service() {
                 val deviceId = settingsDataStore.deviceId.first()
                 mqttManager.subscribe("tablethub/$deviceId/command")
                 mqttManager.subscribe("tablethub/$deviceId/media_player/set")
+                // Subscribe to media player command topics (for bkbilly/mqtt_media_player)
+                mqttManager.subscribe("tablethub/$deviceId/media/cmd/#")
                 commandHandler.startListening()
                 Log.d(TAG, "Subscribed to command topics")
 
