@@ -130,8 +130,10 @@ class HaDiscovery @Inject constructor(
             uniqueId = "tablethub_${deviceId}_brightness",
             stateTopic = stateTopic,
             commandTopic = commandTopic,
+            stateValueTemplate = "{{ value_json.screen }}",
             brightnessStateTopic = stateTopic,
             brightnessCommandTopic = commandTopic,
+            brightnessValueTemplate = "{{ value_json.brightness }}",
             brightnessScale = 255,
             device = deviceInfo,
             icon = "mdi:brightness-6"
