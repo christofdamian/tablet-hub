@@ -48,7 +48,7 @@ Display current weather on the clock screen, pulled from Home Assistant.
 **HA Entities to Subscribe:**
 ```
 sensor.weather_temperature
-sensor.weather_condition  
+sensor.weather_condition
 sensor.weather_humidity (optional)
 weather.home (for forecast)
 ```
@@ -77,7 +77,7 @@ Allow Home Assistant to speak through the tablet using text-to-speech.
     entity_id: media_player.tablethub_bedroom
   data:
     message: >
-      Good morning. It's {{ states('sensor.weather_temperature') }} 
+      Good morning. It's {{ states('sensor.weather_temperature') }}
       degrees and {{ states('sensor.weather_condition') }}.
 ```
 
@@ -168,7 +168,7 @@ automation:
           brightness_pct: 50
           color_temp_kelvin: 3500
           transition: 900
-      
+
       # Bird songs, quiet with gradual fade in
       - service: media_player.volume_set
         target:
@@ -202,7 +202,7 @@ automation:
         data:
           brightness_pct: 100
           color_temp_kelvin: 5000
-      
+
       # Switch to upbeat playlist
       - service: media_player.play_media
         target:
@@ -215,7 +215,7 @@ automation:
           entity_id: media_player.tablethub_bedroom
         data:
           volume_level: 0.6
-      
+
       # Weather announcement after 10 seconds
       - delay: "00:00:10"
       - service: tts.speak
@@ -223,8 +223,8 @@ automation:
           entity_id: media_player.tablethub_bedroom
         data:
           message: >
-            Good morning! It's currently 
-            {{ states('sensor.weather_temperature') }} degrees 
+            Good morning! It's currently
+            {{ states('sensor.weather_temperature') }} degrees
             and {{ states('sensor.weather_condition') }}.
 ```
 
@@ -261,15 +261,23 @@ Improvements to the existing night mode feature.
 - Configure night mode hours (e.g., 22:00-07:00)
 - Combine with sensor: schedule AND dark = night mode
 
+## 7. Improve the media browsing for the Music Player
+- load the data async and on-demand when scrolling, just load the first two pages first
+- add a scroll bar (if possible showing the current place in the alphabet, like in Google Photos)
+
 ---
 
 ## Priority Order
 
+0. **Improve the media browsing for the Music Player**
 1. **Weather widget** – easiest, just subscribe to HA sensors via MQTT
 2. **TTS support** – mostly free via existing media_player, minor audio focus handling
 3. **HA-driven alarm timing** – no tablet changes, just HA templates
 4. **Night mode settings UI** – configure thresholds and brightness
-5. **Google Photos background** – most complex (OAuth, caching, overlay rendering)
+
+## Some day
+1. **Google Photos background** – most complex (OAuth, caching, overlay rendering)
+   Since we can't support Google Photos any more, maybe we have to switch to local files
 
 ---
 
