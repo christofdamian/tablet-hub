@@ -2,7 +2,7 @@
 
 ## Project Guidelines
 
-- Always commit major changes
+- Always commit major changes, but only after the feature has been tested and confirmed working 
 - Do not include yourself (Co-Authored-By) in commit messages
 - Always write a test when fixing a bug
 
