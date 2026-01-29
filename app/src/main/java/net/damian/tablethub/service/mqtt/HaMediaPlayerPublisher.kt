@@ -89,11 +89,17 @@ class HaMediaPlayerPublisher @Inject constructor(
             put("state_position_topic", "$baseTopic/position")
             put("state_albumart_topic", "$baseTopic/albumart")
 
-            // Command topics (what we listen to)
+            // Command topics and payloads (what we listen to)
             put("command_play_topic", "$baseTopic/cmd/play")
+            put("command_play_payload", "play")
             put("command_pause_topic", "$baseTopic/cmd/pause")
+            put("command_pause_payload", "pause")
+            put("command_playpause_topic", "$baseTopic/cmd/playpause")
+            put("command_playpause_payload", "playpause")
             put("command_next_topic", "$baseTopic/cmd/next")
+            put("command_next_payload", "next")
             put("command_previous_topic", "$baseTopic/cmd/previous")
+            put("command_previous_payload", "previous")
 
             // Device info
             put("device", JSONObject().apply {
@@ -107,6 +113,14 @@ class HaMediaPlayerPublisher @Inject constructor(
         val topic = "homeassistant/media_player/${deviceId}_music/config"
         Log.d(TAG, "Publishing media player discovery to: $topic")
 
+        // Publish availability FIRST - required for HA to show the entity as available
+        mqttManager.publish(
+            topic = "tablethub/$deviceId/availability",
+            payload = "online",
+            retained = true
+        )
+
+        // Then publish the discovery config
         mqttManager.publish(
             topic = topic,
             payload = config.toString(),
