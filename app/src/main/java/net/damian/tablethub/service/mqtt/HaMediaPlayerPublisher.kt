@@ -293,14 +293,14 @@ class HaMediaPlayerPublisher @Inject constructor(
             return
         }
 
-        // Use all valid tracks (API already limits to maxTracks)
-        val limitedTracks = validTracks
+        // Shuffle tracks for variety (same behavior as alarm playlists)
+        val shuffledTracks = validTracks.shuffled()
 
-        Log.d(TAG, "Starting playback of ${limitedTracks.size} tracks from playlist: $playlistName")
+        Log.d(TAG, "Starting shuffled playback of ${shuffledTracks.size} tracks from playlist: $playlistName")
 
         // Start playback on main thread
         withContext(Dispatchers.Main) {
-            playbackManager.playQueue(limitedTracks, 0)
+            playbackManager.playQueue(shuffledTracks, 0)
         }
     }
 }
