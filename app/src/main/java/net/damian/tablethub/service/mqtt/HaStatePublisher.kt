@@ -71,12 +71,13 @@ class HaStatePublisher @Inject constructor(
     /**
      * Update next alarm info and publish state.
      */
-    fun updateNextAlarm(alarmTime: String?, alarmLabel: String?, alarmId: Long?) {
+    fun updateNextAlarm(alarmTime: String?, alarmLabel: String?, alarmId: Long?, minutesUntil: Int? = null) {
         currentState.update { state ->
             state.copy(
                 nextAlarm = alarmTime ?: "none",
                 nextAlarmLabel = alarmLabel ?: "",
-                nextAlarmId = alarmId?.toString() ?: ""
+                nextAlarmId = alarmId?.toString() ?: "",
+                alarmCountdown = minutesUntil ?: -1
             )
         }
         publishState()
@@ -216,6 +217,7 @@ data class TabletHubState(
     @com.squareup.moshi.Json(name = "next_alarm") val nextAlarm: String = "none",
     @com.squareup.moshi.Json(name = "next_alarm_label") val nextAlarmLabel: String = "",
     @com.squareup.moshi.Json(name = "next_alarm_id") val nextAlarmId: String = "",
+    @com.squareup.moshi.Json(name = "alarm_countdown") val alarmCountdown: Int = -1,
     @com.squareup.moshi.Json(name = "alarm_ringing") val alarmRinging: String = "OFF",
     @com.squareup.moshi.Json(name = "ringing_alarm_id") val ringingAlarmId: String = "",
     val screen: String = "ON",

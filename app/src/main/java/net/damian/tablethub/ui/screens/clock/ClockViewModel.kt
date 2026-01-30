@@ -3,10 +3,12 @@ package net.damian.tablethub.ui.screens.clock
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -16,7 +18,9 @@ import net.damian.tablethub.service.alarm.AlarmScheduler
 import net.damian.tablethub.service.mqtt.HaStatePublisher
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 
 @HiltViewModel
@@ -43,10 +47,31 @@ class ClockViewModel @Inject constructor(
         viewModelScope.launch {
             alarmRepository.getEnabledAlarms().collect { enabledAlarms ->
                 val nextAlarmInfo = calculateNextAlarmInfo(enabledAlarms)
+                val minutesUntil = nextAlarmInfo?.let { (alarm, daysUntil) ->
+                    calculateMinutesUntil(alarm, daysUntil)
+                }
                 haStatePublisher.updateNextAlarm(
                     alarmTime = nextAlarmInfo?.first?.getTimeString(),
                     alarmLabel = nextAlarmInfo?.first?.label,
-                    alarmId = nextAlarmInfo?.first?.id
+                    alarmId = nextAlarmInfo?.first?.id,
+                    minutesUntil = minutesUntil
+                )
+            }
+        }
+        // Periodically update alarm countdown (every 60 seconds)
+        viewModelScope.launch {
+            while (true) {
+                delay(60_000)
+                val enabledAlarms = alarmRepository.getEnabledAlarms().first()
+                val nextAlarmInfo = calculateNextAlarmInfo(enabledAlarms)
+                val minutesUntil = nextAlarmInfo?.let { (alarm, daysUntil) ->
+                    calculateMinutesUntil(alarm, daysUntil)
+                }
+                haStatePublisher.updateNextAlarm(
+                    alarmTime = nextAlarmInfo?.first?.getTimeString(),
+                    alarmLabel = nextAlarmInfo?.first?.label,
+                    alarmId = nextAlarmInfo?.first?.id,
+                    minutesUntil = minutesUntil
                 )
             }
         }
@@ -168,5 +193,13 @@ class ClockViewModel @Inject constructor(
         }
 
         return "${nextAlarm.getTimeString()} $dayText"
+    }
+
+    private fun calculateMinutesUntil(alarm: AlarmEntity, daysUntil: Int): Int {
+        val now = LocalDateTime.now()
+        val alarmDateTime = LocalDate.now()
+            .plusDays(daysUntil.toLong())
+            .atTime(alarm.hour, alarm.minute)
+        return ChronoUnit.MINUTES.between(now, alarmDateTime).toInt().coerceAtLeast(0)
     }
 }

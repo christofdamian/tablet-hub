@@ -49,6 +49,7 @@ class HaDiscovery @Inject constructor(
         Log.d(TAG, "Publishing discovery messages for device: $deviceId")
 
         publishNextAlarmSensor()
+        publishAlarmCountdownSensor()
         publishAlarmRingingSensor()
         publishScreenSwitch()
         publishBrightnessLight()
@@ -64,6 +65,7 @@ class HaDiscovery @Inject constructor(
         // Publish empty payloads to remove entities
         val topics = listOf(
             "$HA_DISCOVERY_PREFIX/sensor/${deviceId}/next_alarm/config",
+            "$HA_DISCOVERY_PREFIX/sensor/${deviceId}/alarm_countdown/config",
             "$HA_DISCOVERY_PREFIX/binary_sensor/${deviceId}/alarm_ringing/config",
             "$HA_DISCOVERY_PREFIX/switch/${deviceId}/screen/config",
             "$HA_DISCOVERY_PREFIX/light/${deviceId}/brightness/config",
@@ -93,6 +95,20 @@ class HaDiscovery @Inject constructor(
         )
 
         publishConfig("sensor", "next_alarm", config)
+    }
+
+    private fun publishAlarmCountdownSensor() {
+        val config = HaSensorConfig(
+            name = "Alarm Countdown",
+            uniqueId = "tablethub_${deviceId}_alarm_countdown",
+            stateTopic = stateTopic,
+            valueTemplate = "{{ value_json.alarm_countdown if value_json.alarm_countdown >= 0 else 'unknown' }}",
+            device = deviceInfo,
+            icon = "mdi:timer-sand",
+            unitOfMeasurement = "min"
+        )
+
+        publishConfig("sensor", "alarm_countdown", config)
     }
 
     private fun publishAlarmRingingSensor() {

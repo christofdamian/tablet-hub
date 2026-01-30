@@ -27,6 +27,7 @@ The app registers as an HA device via MQTT discovery, exposing:
 
 **Sensors:**
 - `sensor.tablethub_next_alarm` - Next scheduled alarm time (attributes: alarm_label, alarm_id)
+- `sensor.tablethub_alarm_countdown` - Minutes until next alarm (updates every 60 seconds)
 - `sensor.tablethub_battery` - Battery level % (attributes: charging)
 - `binary_sensor.tablethub_alarm_ringing` - ON when alarm is actively ringing
 
@@ -196,9 +197,29 @@ sequence:
 
 Replace `weather.home_2` with your weather entity ID (find it in Developer Tools → States).
 
-### Example Automation
+### Example Automations
 
-Wake up with music when alarm triggers:
+**Pre-alarm routine (15 minutes before):**
+```yaml
+automation:
+  - alias: "TabletHub - Pre-alarm lights"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.tablethub_alarm_countdown
+        below: 15
+    condition:
+      - condition: numeric_state
+        entity_id: sensor.tablethub_alarm_countdown
+        above: 0
+    action:
+      - action: light.turn_on
+        target:
+          entity_id: light.bedroom
+        data:
+          brightness_pct: 10
+```
+
+**Wake up with music when alarm triggers:**
 ```yaml
 automation:
   - alias: "TabletHub - Play music on alarm"
