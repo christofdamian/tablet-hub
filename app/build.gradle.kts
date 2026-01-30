@@ -101,7 +101,6 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.retrofit.moshi)
     implementation(libs.moshi)
-    implementation(libs.moshi.kotlin)
     ksp(libs.moshi.codegen)
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)

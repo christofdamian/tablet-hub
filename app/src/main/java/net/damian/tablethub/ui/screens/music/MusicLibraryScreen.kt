@@ -28,7 +28,7 @@ import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.PlaylistPlay
+import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -498,7 +498,7 @@ private fun PlaylistList(
     getArtworkUrl: (String?) -> String?
 ) {
     if (playlists.isEmpty()) {
-        EmptyState("No playlists found", Icons.Default.PlaylistPlay)
+        EmptyState("No playlists found", Icons.AutoMirrored.Filled.PlaylistPlay)
         return
     }
 
@@ -543,7 +543,7 @@ private fun PlaylistList(
                     }
 
                     Icon(
-                        imageVector = Icons.Default.PlaylistPlay,
+                        imageVector = Icons.AutoMirrored.Filled.PlaylistPlay,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary
                     )

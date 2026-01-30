@@ -27,7 +27,7 @@ import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.Speaker
 import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.filled.Tv
-import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -203,7 +203,7 @@ private fun getIconForName(name: String): ImageVector {
         "pause" -> Icons.Default.Pause
         "skip_next" -> Icons.Default.SkipNext
         "skip_previous" -> Icons.Default.SkipPrevious
-        "volume_up" -> Icons.Default.VolumeUp
+        "volume_up" -> Icons.AutoMirrored.Filled.VolumeUp
         else -> Icons.Default.Lightbulb
     }
 }
