@@ -112,6 +112,13 @@ target:
 # Next/previous track
 action: media_player.media_next_track
 action: media_player.media_previous_track
+
+# Set volume (0.0 to 1.0)
+action: media_player.volume_set
+data:
+  volume_level: 0.3
+target:
+  entity_id: media_player.mqtt_media_player_tablethub_music
 ```
 
 **Play a playlist by name:**

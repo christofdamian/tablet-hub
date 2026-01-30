@@ -1,7 +1,10 @@
 package net.damian.tablethub.service.mqtt
 
+import android.content.Context
+import android.media.AudioManager
 import android.util.Base64
 import android.util.Log
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -28,6 +31,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class HaMediaPlayerPublisher @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val mqttManager: MqttManager,
     private val playbackManager: PlaybackManager,
     private val plexRepository: PlexRepository,
@@ -44,6 +48,7 @@ class HaMediaPlayerPublisher @Inject constructor(
     private var lastArtworkUrl: String? = null
     private var cachedArtworkBase64: String? = null
     private val httpClient = OkHttpClient()
+    private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
     private val baseTopic: String get() = "tablethub/$deviceId/media"
 
@@ -88,6 +93,7 @@ class HaMediaPlayerPublisher @Inject constructor(
             put("state_duration_topic", "$baseTopic/duration")
             put("state_position_topic", "$baseTopic/position")
             put("state_albumart_topic", "$baseTopic/albumart")
+            put("state_volume_topic", "$baseTopic/volume")
 
             // Command topics and payloads (what we listen to)
             put("command_play_topic", "$baseTopic/cmd/play")
@@ -101,6 +107,7 @@ class HaMediaPlayerPublisher @Inject constructor(
             put("command_previous_topic", "$baseTopic/cmd/previous")
             put("command_previous_payload", "previous")
             put("command_playmedia_topic", "$baseTopic/cmd/playmedia")
+            put("command_volume_topic", "$baseTopic/cmd/volume")
 
             // Device info
             put("device", JSONObject().apply {
@@ -146,6 +153,10 @@ class HaMediaPlayerPublisher @Inject constructor(
             else -> "idle"
         }
         mqttManager.publish("$baseTopic/state", playbackState, retained = true)
+
+        // Publish volume (0.0 to 1.0)
+        val volumeLevel = getVolumeLevel()
+        mqttManager.publish("$baseTopic/volume", volumeLevel.toString(), retained = true)
 
         // Publish track info
         if (track != null) {
@@ -207,6 +218,12 @@ class HaMediaPlayerPublisher @Inject constructor(
             return
         }
 
+        // Handle volume command
+        if (command.lowercase() == "volume" && payload != null) {
+            handleVolumeCommand(payload)
+            return
+        }
+
         // MediaController methods must be called on main thread
         mainScope.launch {
             when (command.lowercase()) {
@@ -218,6 +235,30 @@ class HaMediaPlayerPublisher @Inject constructor(
                 "toggle", "playpause" -> playbackManager.togglePlayPause()
             }
         }
+    }
+
+    private fun handleVolumeCommand(payload: String) {
+        try {
+            val volume = payload.toFloat().coerceIn(0f, 1f)
+            setVolumeLevel(volume)
+            // Publish updated volume
+            mqttManager.publish("$baseTopic/volume", volume.toString(), retained = true)
+            Log.d(TAG, "Volume set to: $volume")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to parse volume: $payload", e)
+        }
+    }
+
+    private fun getVolumeLevel(): Float {
+        val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+        return if (maxVolume > 0) currentVolume.toFloat() / maxVolume else 0f
+    }
+
+    private fun setVolumeLevel(level: Float) {
+        val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        val targetVolume = (level * maxVolume).toInt().coerceIn(0, maxVolume)
+        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, targetVolume, 0)
     }
 
     private fun handlePlayMedia(payload: String) {
