@@ -2,6 +2,7 @@ package net.damian.tablethub.service.music
 
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.util.Log
 import androidx.media3.common.MediaItem
@@ -47,6 +48,9 @@ class PlaybackManager @Inject constructor(
 
     private var currentQueue: List<PlexMetadata> = emptyList()
 
+    // Pending playback request to execute once player is ready
+    private var pendingPlayback: (() -> Unit)? = null
+
     fun initialize(player: Player) {
         this.player = player
         Log.d(TAG, "PlaybackManager initialized with player")
@@ -67,11 +71,27 @@ class PlaybackManager @Inject constructor(
                 if (controller != null) {
                     player = controller
                     Log.d(TAG, "Connected to MediaController")
+                    // Execute any pending playback request
+                    pendingPlayback?.invoke()
+                    pendingPlayback = null
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to connect to MediaController", e)
             }
         }, MoreExecutors.directExecutor())
+    }
+
+    /**
+     * Ensures the music service is started and we're connected to it.
+     * Call this before playQueue when triggering playback from outside the UI.
+     */
+    fun ensureServiceStarted() {
+        if (player != null) return
+
+        Log.d(TAG, "Starting MusicPlaybackService")
+        val intent = Intent(context, MusicPlaybackService::class.java)
+        context.startService(intent)
+        connectToService()
     }
 
     fun playTrack(track: PlexMetadata, queue: List<PlexMetadata> = listOf(track)) {
@@ -142,6 +162,21 @@ class PlaybackManager @Inject constructor(
             queue = tracks,
             currentIndex = startIndex
         )
+
+        // If player isn't ready, start service and queue the playback
+        if (player == null) {
+            Log.d(TAG, "Player not ready, starting service and queueing playback")
+            pendingPlayback = {
+                player?.let { p ->
+                    p.setMediaItems(mediaItems, startIndex, 0L)
+                    p.prepare()
+                    p.play()
+                    Log.d(TAG, "Executed pending playback")
+                }
+            }
+            ensureServiceStarted()
+            return
+        }
 
         player?.let { p ->
             p.setMediaItems(mediaItems, startIndex, 0L)
