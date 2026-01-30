@@ -265,6 +265,46 @@ Improvements to the existing night mode feature.
 - load the data async and on-demand when scrolling, just load the first two pages first
 - add a scroll bar (if possible showing the current place in the alphabet, like in Google Photos)
 
+### Search Feature
+
+Add search functionality to find artists, albums, and tracks.
+
+**Implementation:**
+
+1. **Repository** (~10 lines)
+   - Add `search(sectionId, query, type?)` method to `PlexRepository.kt`
+   - Calls existing `PlexServerApi.search()` endpoint
+   - Returns `List<PlexMetadata>` (mixed results or filtered by type)
+
+2. **ViewModel** (~20 lines)
+   - Add `searchQuery: StateFlow<String>` state
+   - Add `searchResults: StateFlow<List<PlexMetadata>>` state
+   - Add `search(query: String)` function
+   - Consider debouncing (300-500ms) to avoid excessive API calls
+
+3. **UI** (~30 lines)
+   - Add search icon/field to the tab bar area in `MusicLibraryScreen.kt`
+   - Show search results in a list (replacing tab content when searching)
+   - Clear search button to return to normal browsing
+   - Results show type icon (artist/album/track) for mixed results
+
+**API Endpoint (already exists):**
+```kotlin
+// PlexServerApi.kt:54
+@GET("library/sections/{sectionId}/search")
+suspend fun search(
+    @Path("sectionId") sectionId: String,
+    @Header("X-Plex-Token") token: String,
+    @Query("query") query: String,
+    @Query("type") type: Int? = null  // 8=artist, 9=album, 10=track
+): Response<PlexMediaContainer>
+```
+
+**Optional Enhancements:**
+- Filter tabs (Artists only, Albums only, Tracks only)
+- Search history (recent searches)
+- Voice search integration
+
 ---
 
 ## Priority Order
