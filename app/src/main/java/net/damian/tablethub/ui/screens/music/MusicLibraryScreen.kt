@@ -116,7 +116,13 @@ fun MusicLibraryScreen(
                     Tab(
                         selected = selectedTab == tab,
                         onClick = { viewModel.selectTab(tab) },
-                        text = { Text(tab.name) }
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        text = {
+                            Text(
+                                text = tab.name,
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        }
                     )
                 }
             }
