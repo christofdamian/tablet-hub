@@ -15,8 +15,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -39,7 +42,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -169,7 +174,11 @@ fun MusicLibraryScreen(
                             ArtistGrid(
                                 artists = state.artists,
                                 onArtistClick = { viewModel.selectArtist(it) },
-                                getArtworkUrl = { viewModel.getArtworkUrl(it) }
+                                getArtworkUrl = { viewModel.getArtworkUrl(it) },
+                                hasMore = state.artistsHasMore,
+                                isLoadingMore = state.isLoadingMoreArtists,
+                                onLoadMore = { viewModel.loadMoreArtists() },
+                                totalCount = state.artistsTotal
                             )
                         }
 
@@ -177,7 +186,11 @@ fun MusicLibraryScreen(
                             AlbumGrid(
                                 albums = state.allAlbums,
                                 onAlbumClick = { viewModel.selectAlbum(it) },
-                                getArtworkUrl = { viewModel.getArtworkUrl(it) }
+                                getArtworkUrl = { viewModel.getArtworkUrl(it) },
+                                hasMore = state.allAlbumsHasMore,
+                                isLoadingMore = state.isLoadingMoreAlbums,
+                                onLoadMore = { viewModel.loadMoreAlbums() },
+                                totalCount = state.allAlbumsTotal
                             )
                         }
 
@@ -193,7 +206,11 @@ fun MusicLibraryScreen(
                             AlbumGrid(
                                 albums = state.recentlyAdded,
                                 onAlbumClick = { viewModel.selectAlbum(it) },
-                                getArtworkUrl = { viewModel.getArtworkUrl(it) }
+                                getArtworkUrl = { viewModel.getArtworkUrl(it) },
+                                hasMore = state.recentlyAddedHasMore,
+                                isLoadingMore = state.isLoadingMoreRecent,
+                                onLoadMore = { viewModel.loadMoreRecent() },
+                                totalCount = state.recentlyAddedTotal
                             )
                         }
                     }
@@ -210,14 +227,34 @@ fun MusicLibraryScreen(
 private fun ArtistGrid(
     artists: List<PlexMetadata>,
     onArtistClick: (PlexMetadata) -> Unit,
-    getArtworkUrl: (String?) -> String?
+    getArtworkUrl: (String?) -> String?,
+    hasMore: Boolean = false,
+    isLoadingMore: Boolean = false,
+    onLoadMore: () -> Unit = {},
+    totalCount: Int = 0
 ) {
     if (artists.isEmpty()) {
         EmptyState("No artists found", Icons.Default.Person)
         return
     }
 
+    val gridState = rememberLazyGridState()
+
+    // Detect when scrolled near the end and trigger load more
+    LaunchedEffect(gridState, hasMore, isLoadingMore) {
+        snapshotFlow {
+            val lastVisibleItem = gridState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            val totalItems = gridState.layoutInfo.totalItemsCount
+            lastVisibleItem >= totalItems - 10
+        }.collect { nearEnd ->
+            if (nearEnd && hasMore && !isLoadingMore) {
+                onLoadMore()
+            }
+        }
+    }
+
     LazyVerticalGrid(
+        state = gridState,
         columns = GridCells.Adaptive(minSize = 150.dp),
         contentPadding = PaddingValues(vertical = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -232,6 +269,35 @@ private fun ArtistGrid(
                 placeholder = Icons.Default.Person
             )
         }
+
+        // Loading indicator at the bottom
+        if (isLoadingMore) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(32.dp))
+                }
+            }
+        }
+
+        // Item count indicator
+        if (totalCount > 0) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Text(
+                    text = "Showing ${artists.size} of $totalCount",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+            }
+        }
     }
 }
 
@@ -239,14 +305,34 @@ private fun ArtistGrid(
 private fun AlbumGrid(
     albums: List<PlexMetadata>,
     onAlbumClick: (PlexMetadata) -> Unit,
-    getArtworkUrl: (String?) -> String?
+    getArtworkUrl: (String?) -> String?,
+    hasMore: Boolean = false,
+    isLoadingMore: Boolean = false,
+    onLoadMore: () -> Unit = {},
+    totalCount: Int = 0
 ) {
     if (albums.isEmpty()) {
         EmptyState("No albums found", Icons.Default.Album)
         return
     }
 
+    val gridState = rememberLazyGridState()
+
+    // Detect when scrolled near the end and trigger load more
+    LaunchedEffect(gridState, hasMore, isLoadingMore) {
+        snapshotFlow {
+            val lastVisibleItem = gridState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            val totalItems = gridState.layoutInfo.totalItemsCount
+            lastVisibleItem >= totalItems - 10
+        }.collect { nearEnd ->
+            if (nearEnd && hasMore && !isLoadingMore) {
+                onLoadMore()
+            }
+        }
+    }
+
     LazyVerticalGrid(
+        state = gridState,
         columns = GridCells.Adaptive(minSize = 150.dp),
         contentPadding = PaddingValues(vertical = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -260,6 +346,35 @@ private fun AlbumGrid(
                 onClick = { onAlbumClick(album) },
                 placeholder = Icons.Default.Album
             )
+        }
+
+        // Loading indicator at the bottom
+        if (isLoadingMore) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(32.dp))
+                }
+            }
+        }
+
+        // Item count indicator
+        if (totalCount > 0) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Text(
+                    text = "Showing ${albums.size} of $totalCount",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+            }
         }
     }
 }

@@ -90,18 +90,20 @@ interface PlexServerApi {
     ): Response<PlexMediaContainer>
 
     /**
-     * Get artists in a music library.
+     * Get artists in a music library with pagination.
      */
     @GET("library/sections/{sectionId}/all")
     suspend fun getArtists(
         @Path("sectionId") sectionId: String,
         @Header("X-Plex-Token") token: String,
         @Query("type") type: Int = 8, // artist
+        @Query("X-Plex-Container-Start") start: Int = 0,
+        @Query("X-Plex-Container-Size") size: Int = 50,
         @Header("Accept") accept: String = "application/json"
     ): Response<PlexMediaContainer>
 
     /**
-     * Get albums (optionally filtered by artist).
+     * Get albums with pagination (optionally filtered by artist).
      */
     @GET("library/sections/{sectionId}/all")
     suspend fun getAlbums(
@@ -109,6 +111,8 @@ interface PlexServerApi {
         @Header("X-Plex-Token") token: String,
         @Query("type") type: Int = 9, // album
         @Query("artist.id") artistId: String? = null,
+        @Query("X-Plex-Container-Start") start: Int = 0,
+        @Query("X-Plex-Container-Size") size: Int = 50,
         @Header("Accept") accept: String = "application/json"
     ): Response<PlexMediaContainer>
 
@@ -168,12 +172,14 @@ interface PlexServerApi {
     ): Response<PlexMediaContainer>
 
     /**
-     * Get recently added items.
+     * Get recently added items with pagination.
      */
     @GET("library/sections/{sectionId}/recentlyAdded")
     suspend fun getRecentlyAdded(
         @Path("sectionId") sectionId: String,
         @Header("X-Plex-Token") token: String,
+        @Query("X-Plex-Container-Start") start: Int = 0,
+        @Query("X-Plex-Container-Size") size: Int = 50,
         @Header("Accept") accept: String = "application/json"
     ): Response<PlexMediaContainer>
 }

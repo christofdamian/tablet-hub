@@ -26,16 +26,28 @@ data class MusicLibraryState(
     val error: String? = null,
     val musicLibraries: List<PlexDirectory> = emptyList(),
     val selectedLibraryId: String? = null,
+    // Artists with pagination
     val artists: List<PlexMetadata> = emptyList(),
+    val artistsHasMore: Boolean = false,
+    val artistsTotal: Int = 0,
+    val isLoadingMoreArtists: Boolean = false,
     val selectedArtist: PlexMetadata? = null,
     val albums: List<PlexMetadata> = emptyList(),
+    // All albums with pagination
     val allAlbums: List<PlexMetadata> = emptyList(),
+    val allAlbumsHasMore: Boolean = false,
+    val allAlbumsTotal: Int = 0,
+    val isLoadingMoreAlbums: Boolean = false,
     val selectedAlbum: PlexMetadata? = null,
     val tracks: List<PlexMetadata> = emptyList(),
     val playlists: List<PlexMetadata> = emptyList(),
     val selectedPlaylist: PlexMetadata? = null,
     val playlistTracks: List<PlexMetadata> = emptyList(),
-    val recentlyAdded: List<PlexMetadata> = emptyList()
+    // Recently added with pagination
+    val recentlyAdded: List<PlexMetadata> = emptyList(),
+    val recentlyAddedHasMore: Boolean = false,
+    val recentlyAddedTotal: Int = 0,
+    val isLoadingMoreRecent: Boolean = false
 )
 
 enum class MusicTab {
@@ -115,12 +127,14 @@ class MusicLibraryViewModel @Inject constructor(
     private fun loadArtists() {
         val libraryId = _state.value.selectedLibraryId ?: return
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, error = null)
-            plexRepository.getArtists(libraryId)
-                .onSuccess { artists ->
+            _state.value = _state.value.copy(isLoading = true, error = null, artists = emptyList())
+            plexRepository.getArtists(libraryId, start = 0)
+                .onSuccess { result ->
                     _state.value = _state.value.copy(
                         isLoading = false,
-                        artists = artists
+                        artists = result.items,
+                        artistsHasMore = result.hasMore,
+                        artistsTotal = result.totalSize
                     )
                 }
                 .onFailure { error ->
@@ -128,6 +142,27 @@ class MusicLibraryViewModel @Inject constructor(
                         isLoading = false,
                         error = error.message
                     )
+                }
+        }
+    }
+
+    fun loadMoreArtists() {
+        val libraryId = _state.value.selectedLibraryId ?: return
+        if (_state.value.isLoadingMoreArtists || !_state.value.artistsHasMore) return
+
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoadingMoreArtists = true)
+            val currentSize = _state.value.artists.size
+            plexRepository.getArtists(libraryId, start = currentSize)
+                .onSuccess { result ->
+                    _state.value = _state.value.copy(
+                        isLoadingMoreArtists = false,
+                        artists = _state.value.artists + result.items,
+                        artistsHasMore = result.hasMore
+                    )
+                }
+                .onFailure {
+                    _state.value = _state.value.copy(isLoadingMoreArtists = false)
                 }
         }
     }
@@ -191,12 +226,14 @@ class MusicLibraryViewModel @Inject constructor(
     private fun loadAllAlbums() {
         val libraryId = _state.value.selectedLibraryId ?: return
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, error = null)
-            plexRepository.getAllAlbums(libraryId)
-                .onSuccess { albums ->
+            _state.value = _state.value.copy(isLoading = true, error = null, allAlbums = emptyList())
+            plexRepository.getAllAlbums(libraryId, start = 0)
+                .onSuccess { result ->
                     _state.value = _state.value.copy(
                         isLoading = false,
-                        allAlbums = albums
+                        allAlbums = result.items,
+                        allAlbumsHasMore = result.hasMore,
+                        allAlbumsTotal = result.totalSize
                     )
                 }
                 .onFailure { error ->
@@ -204,6 +241,27 @@ class MusicLibraryViewModel @Inject constructor(
                         isLoading = false,
                         error = error.message
                     )
+                }
+        }
+    }
+
+    fun loadMoreAlbums() {
+        val libraryId = _state.value.selectedLibraryId ?: return
+        if (_state.value.isLoadingMoreAlbums || !_state.value.allAlbumsHasMore) return
+
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoadingMoreAlbums = true)
+            val currentSize = _state.value.allAlbums.size
+            plexRepository.getAllAlbums(libraryId, start = currentSize)
+                .onSuccess { result ->
+                    _state.value = _state.value.copy(
+                        isLoadingMoreAlbums = false,
+                        allAlbums = _state.value.allAlbums + result.items,
+                        allAlbumsHasMore = result.hasMore
+                    )
+                }
+                .onFailure {
+                    _state.value = _state.value.copy(isLoadingMoreAlbums = false)
                 }
         }
     }
@@ -264,9 +322,35 @@ class MusicLibraryViewModel @Inject constructor(
     private fun loadRecentlyAdded() {
         val libraryId = _state.value.selectedLibraryId ?: return
         viewModelScope.launch {
-            plexRepository.getRecentlyAdded(libraryId)
-                .onSuccess { items ->
-                    _state.value = _state.value.copy(recentlyAdded = items)
+            _state.value = _state.value.copy(recentlyAdded = emptyList())
+            plexRepository.getRecentlyAdded(libraryId, start = 0)
+                .onSuccess { result ->
+                    _state.value = _state.value.copy(
+                        recentlyAdded = result.items,
+                        recentlyAddedHasMore = result.hasMore,
+                        recentlyAddedTotal = result.totalSize
+                    )
+                }
+        }
+    }
+
+    fun loadMoreRecent() {
+        val libraryId = _state.value.selectedLibraryId ?: return
+        if (_state.value.isLoadingMoreRecent || !_state.value.recentlyAddedHasMore) return
+
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoadingMoreRecent = true)
+            val currentSize = _state.value.recentlyAdded.size
+            plexRepository.getRecentlyAdded(libraryId, start = currentSize)
+                .onSuccess { result ->
+                    _state.value = _state.value.copy(
+                        isLoadingMoreRecent = false,
+                        recentlyAdded = _state.value.recentlyAdded + result.items,
+                        recentlyAddedHasMore = result.hasMore
+                    )
+                }
+                .onFailure {
+                    _state.value = _state.value.copy(isLoadingMoreRecent = false)
                 }
         }
     }

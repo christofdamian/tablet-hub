@@ -62,6 +62,8 @@ data class PlexMediaContainer(
 @JsonClass(generateAdapter = true)
 data class PlexContainer(
     val size: Int?,
+    val totalSize: Int?, // Total items available (for pagination)
+    val offset: Int?, // Current offset in paginated results
     val title1: String?,
     val title2: String?,
     @Json(name = "Directory") val directories: List<PlexDirectory>?,

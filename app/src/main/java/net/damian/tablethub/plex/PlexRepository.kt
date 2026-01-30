@@ -7,6 +7,16 @@ import net.damian.tablethub.plex.model.PlexMetadata
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Result of a paginated API call.
+ */
+data class PagedResult<T>(
+    val items: List<T>,
+    val offset: Int,
+    val totalSize: Int,
+    val hasMore: Boolean
+)
+
 @Singleton
 class PlexRepository @Inject constructor(
     private val plexAuthManager: PlexAuthManager,
@@ -14,6 +24,7 @@ class PlexRepository @Inject constructor(
 ) {
     companion object {
         private const val TAG = "PlexRepository"
+        const val DEFAULT_PAGE_SIZE = 50
     }
 
     private val serverApi: PlexServerApi?
@@ -57,18 +68,27 @@ class PlexRepository @Inject constructor(
     }
 
     /**
-     * Get all artists in a music library.
+     * Get artists in a music library with pagination.
+     * @param start Offset to start from (default 0)
+     * @param size Number of items to fetch (default 50)
      */
-    suspend fun getArtists(sectionId: String): Result<List<PlexMetadata>> {
+    suspend fun getArtists(
+        sectionId: String,
+        start: Int = 0,
+        size: Int = DEFAULT_PAGE_SIZE
+    ): Result<PagedResult<PlexMetadata>> {
         val api = serverApi ?: return Result.failure(Exception("Not connected to server"))
         val authToken = token ?: return Result.failure(Exception("Not authenticated"))
 
         return try {
-            val response = api.getArtists(sectionId, authToken)
+            val response = api.getArtists(sectionId, authToken, start = start, size = size)
             if (response.isSuccessful) {
-                val artists = response.body()?.mediaContainer?.metadata ?: emptyList()
-                Log.d(TAG, "Found ${artists.size} artists")
-                Result.success(artists)
+                val container = response.body()?.mediaContainer
+                val artists = container?.metadata ?: emptyList()
+                val totalSize = container?.totalSize ?: container?.size ?: artists.size
+                val hasMore = start + artists.size < totalSize
+                Log.d(TAG, "Found ${artists.size} artists (offset=$start, total=$totalSize, hasMore=$hasMore)")
+                Result.success(PagedResult(artists, start, totalSize, hasMore))
             } else {
                 Result.failure(Exception("Failed to get artists: ${response.code()}"))
             }
@@ -168,18 +188,27 @@ class PlexRepository @Inject constructor(
     }
 
     /**
-     * Get all albums in a music library.
+     * Get albums in a music library with pagination.
+     * @param start Offset to start from (default 0)
+     * @param size Number of items to fetch (default 50)
      */
-    suspend fun getAllAlbums(sectionId: String): Result<List<PlexMetadata>> {
+    suspend fun getAllAlbums(
+        sectionId: String,
+        start: Int = 0,
+        size: Int = DEFAULT_PAGE_SIZE
+    ): Result<PagedResult<PlexMetadata>> {
         val api = serverApi ?: return Result.failure(Exception("Not connected to server"))
         val authToken = token ?: return Result.failure(Exception("Not authenticated"))
 
         return try {
-            val response = api.getAlbums(sectionId, authToken)
+            val response = api.getAlbums(sectionId, authToken, start = start, size = size)
             if (response.isSuccessful) {
-                val albums = response.body()?.mediaContainer?.metadata ?: emptyList()
-                Log.d(TAG, "Found ${albums.size} albums")
-                Result.success(albums)
+                val container = response.body()?.mediaContainer
+                val albums = container?.metadata ?: emptyList()
+                val totalSize = container?.totalSize ?: container?.size ?: albums.size
+                val hasMore = start + albums.size < totalSize
+                Log.d(TAG, "Found ${albums.size} albums (offset=$start, total=$totalSize, hasMore=$hasMore)")
+                Result.success(PagedResult(albums, start, totalSize, hasMore))
             } else {
                 Result.failure(Exception("Failed to get albums: ${response.code()}"))
             }
@@ -190,18 +219,27 @@ class PlexRepository @Inject constructor(
     }
 
     /**
-     * Get recently added items.
+     * Get recently added items with pagination.
+     * @param start Offset to start from (default 0)
+     * @param size Number of items to fetch (default 50)
      */
-    suspend fun getRecentlyAdded(sectionId: String): Result<List<PlexMetadata>> {
+    suspend fun getRecentlyAdded(
+        sectionId: String,
+        start: Int = 0,
+        size: Int = DEFAULT_PAGE_SIZE
+    ): Result<PagedResult<PlexMetadata>> {
         val api = serverApi ?: return Result.failure(Exception("Not connected to server"))
         val authToken = token ?: return Result.failure(Exception("Not authenticated"))
 
         return try {
-            val response = api.getRecentlyAdded(sectionId, authToken)
+            val response = api.getRecentlyAdded(sectionId, authToken, start = start, size = size)
             if (response.isSuccessful) {
-                val items = response.body()?.mediaContainer?.metadata ?: emptyList()
-                Log.d(TAG, "Found ${items.size} recently added items")
-                Result.success(items)
+                val container = response.body()?.mediaContainer
+                val items = container?.metadata ?: emptyList()
+                val totalSize = container?.totalSize ?: items.size
+                val hasMore = start + items.size < totalSize
+                Log.d(TAG, "Found ${items.size} recently added items (offset=$start, total=$totalSize)")
+                Result.success(PagedResult(items, start, totalSize, hasMore))
             } else {
                 Result.failure(Exception("Failed to get recently added: ${response.code()}"))
             }
