@@ -4,9 +4,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Brightness2
@@ -29,6 +32,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import net.damian.tablethub.ui.components.ClockDisplay
 import net.damian.tablethub.ui.components.NextAlarmDisplay
 import net.damian.tablethub.ui.components.NowPlayingBar
+import net.damian.tablethub.ui.components.WeatherWidget
 import net.damian.tablethub.ui.theme.Dimensions
 
 @Composable
@@ -82,20 +86,28 @@ fun ClockScreen(
                 )
             }
 
-            // Night mode toggle button (top-right)
-            IconButton(
-                onClick = onNightModeToggle,
+            // Weather widget and night mode toggle (top-right)
+            Row(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(top = 48.dp, end = 16.dp)
-                    .size(Dimensions.IconButtonSize)
+                    .padding(top = 48.dp, end = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = if (isNightModeActive) Icons.Default.Brightness7 else Icons.Default.Brightness2,
-                    contentDescription = if (isNightModeActive) "Exit night mode" else "Enter night mode",
-                    modifier = Modifier.size(Dimensions.IconSizeDefault),
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
+                WeatherWidget()
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                IconButton(
+                    onClick = onNightModeToggle,
+                    modifier = Modifier.size(Dimensions.IconButtonSize)
+                ) {
+                    Icon(
+                        imageVector = if (isNightModeActive) Icons.Default.Brightness7 else Icons.Default.Brightness2,
+                        contentDescription = if (isNightModeActive) "Exit night mode" else "Enter night mode",
+                        modifier = Modifier.size(Dimensions.IconSizeDefault),
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
             }
 
             // Alarm FAB (bottom-left)

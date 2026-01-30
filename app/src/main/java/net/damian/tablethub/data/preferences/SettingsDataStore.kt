@@ -40,6 +40,11 @@ class SettingsDataStore @Inject constructor(
     private val nightModeLuxHysteresisKey = intPreferencesKey("night_mode_lux_hysteresis")
     private val nightModeBrightnessKey = intPreferencesKey("night_mode_brightness")
 
+    // Weather Settings
+    private val weatherEnabledKey = booleanPreferencesKey("weather_enabled")
+    private val weatherTemperatureEntityKey = stringPreferencesKey("weather_temperature_entity")
+    private val weatherConditionEntityKey = stringPreferencesKey("weather_condition_entity")
+
     // TODO: Remove hardcoded values and use settings UI
     val mqttConfig: Flow<MqttConfig> = context.dataStore.data.map { preferences ->
         MqttConfig(
@@ -68,6 +73,14 @@ class SettingsDataStore @Inject constructor(
             luxThreshold = preferences[nightModeLuxThresholdKey] ?: 15,
             luxHysteresis = preferences[nightModeLuxHysteresisKey] ?: 5,
             nightBrightness = preferences[nightModeBrightnessKey] ?: 5
+        )
+    }
+
+    val weatherConfig: Flow<WeatherConfig> = context.dataStore.data.map { preferences ->
+        WeatherConfig(
+            enabled = preferences[weatherEnabledKey] ?: true,
+            temperatureEntity = preferences[weatherTemperatureEntityKey] ?: "sensor.weather_temperature",
+            conditionEntity = preferences[weatherConditionEntityKey] ?: "sensor.weather_condition"
         )
     }
 
@@ -117,6 +130,14 @@ class SettingsDataStore @Inject constructor(
             preferences[nightModeAutoEnabledKey] = enabled
         }
     }
+
+    suspend fun updateWeatherConfig(config: WeatherConfig) {
+        context.dataStore.edit { preferences ->
+            preferences[weatherEnabledKey] = config.enabled
+            preferences[weatherTemperatureEntityKey] = config.temperatureEntity
+            preferences[weatherConditionEntityKey] = config.conditionEntity
+        }
+    }
 }
 
 data class MqttConfig(
@@ -141,4 +162,10 @@ data class NightModeConfig(
     val luxThreshold: Int = 15,
     val luxHysteresis: Int = 5,
     val nightBrightness: Int = 5
+)
+
+data class WeatherConfig(
+    val enabled: Boolean = true,
+    val temperatureEntity: String = "sensor.weather_temperature",
+    val conditionEntity: String = "sensor.weather_condition"
 )

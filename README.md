@@ -123,6 +123,35 @@ target:
   entity_id: media_player.mqtt_media_player_tablethub_music
 ```
 
+### Weather Widget
+
+The clock screen displays a weather widget showing temperature and condition from Home Assistant sensors.
+
+**1. Create template sensors** (Settings → Devices & Services → Helpers → Create Helper → Template sensor):
+
+Temperature sensor:
+- Name: `Weather Temperature`
+- State template: `{{ state_attr('weather.home', 'temperature') | round(0) }}`
+- Unit: `°C` or `°F`
+
+Condition sensor:
+- Name: `Weather Condition`
+- State template: `{{ states('weather.home') }}`
+
+Replace `weather.home` with your weather entity ID (find it in Developer Tools → States).
+
+**2. Publish sensors via MQTT Statestream** (add to `configuration.yaml`):
+```yaml
+mqtt_statestream:
+  base_topic: homeassistant/statestream
+  include:
+    entities:
+      - sensor.weather_temperature
+      - sensor.weather_condition
+```
+
+The widget will automatically display in the top-right corner of the clock screen when data is available.
+
 ### Example Automation
 
 Wake up with music when alarm triggers:
