@@ -19,6 +19,7 @@ import net.damian.tablethub.service.alarm.AlarmReceiver
 import net.damian.tablethub.service.alarm.AlarmService
 import net.damian.tablethub.service.display.NightModeManager
 import net.damian.tablethub.service.display.ScreenManager
+import net.damian.tablethub.service.tts.TtsManager
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -45,6 +46,7 @@ class MqttCommandHandler @Inject constructor(
     private val haStatePublisher: HaStatePublisher,
     private val nightModeManager: NightModeManager,
     private val mediaPlayerPublisher: dagger.Lazy<HaMediaPlayerPublisher>,
+    private val ttsManager: TtsManager,
     private val moshi: Moshi
 ) {
     companion object {
@@ -62,6 +64,12 @@ class MqttCommandHandler @Inject constructor(
     }
 
     private fun handleMessage(message: MqttIncomingMessage) {
+        // Handle TTS messages
+        if (message.topic.endsWith("/tts")) {
+            handleTtsMessage(message.payload)
+            return
+        }
+
         // Handle media player commands (legacy format)
         if (message.topic.endsWith("/media_player/set")) {
             handleMediaPlayerCommand(message.payload)
@@ -209,6 +217,24 @@ class MqttCommandHandler @Inject constructor(
             alarmRepository.setAlarmEnabled(alarmId, enabled)
         }
     }
+
+    private fun handleTtsMessage(payload: String) {
+        Log.d(TAG, "Received TTS message: $payload")
+        try {
+            val adapter = moshi.adapter(TtsPayload::class.java)
+            val ttsPayload = adapter.fromJson(payload)
+            if (ttsPayload?.message != null) {
+                ttsManager.speak(ttsPayload.message, ttsPayload.language)
+            } else {
+                // Try plain text fallback
+                ttsManager.speak(payload)
+            }
+        } catch (e: Exception) {
+            // Plain text message
+            Log.d(TAG, "Treating TTS payload as plain text")
+            ttsManager.speak(payload)
+        }
+    }
 }
 
 @com.squareup.moshi.JsonClass(generateAdapter = true)
@@ -216,4 +242,10 @@ data class MqttCommand(
     val command: String,
     val value: Any? = null,
     @com.squareup.moshi.Json(name = "alarm_id") val alarmId: Any? = null
+)
+
+@com.squareup.moshi.JsonClass(generateAdapter = true)
+data class TtsPayload(
+    val message: String?,
+    val language: String? = null
 )

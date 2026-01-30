@@ -152,6 +152,50 @@ mqtt_statestream:
 
 The widget will automatically display in the top-right corner of the clock screen when data is available.
 
+### Text-to-Speech (TTS)
+
+The tablet can speak announcements using Android's native TTS engine. Send text via MQTT and the tablet will speak it aloud, automatically ducking any playing music.
+
+**Simple announcement:**
+```yaml
+action: mqtt.publish
+data:
+  topic: tablethub/tablethub/tts
+  payload: "Hello, this is a test announcement"
+```
+
+**JSON format (with optional language):**
+```yaml
+action: mqtt.publish
+data:
+  topic: tablethub/tablethub/tts
+  payload: '{"message": "Bonjour", "language": "fr-FR"}'
+```
+
+**Weather announcement script with forecast:**
+
+Create a script (Settings → Automations & Scenes → Scripts → Add Script → Edit in YAML):
+```yaml
+alias: Announce Weather
+sequence:
+  - action: weather.get_forecasts
+    target:
+      entity_id: weather.home_2
+    data:
+      type: daily
+    response_variable: forecast
+  - action: mqtt.publish
+    data:
+      topic: tablethub/tablethub/tts
+      payload: >
+        Good morning! It's currently {{ state_attr('weather.home_2', 'temperature') | round(0) }} degrees
+        and {{ states('weather.home_2') }}.
+        Today's high is {{ forecast['weather.home_2'].forecast[0].temperature | round(0) }}
+        and the low is {{ forecast['weather.home_2'].forecast[0].templow | round(0) }} degrees.
+```
+
+Replace `weather.home_2` with your weather entity ID (find it in Developer Tools → States).
+
 ### Example Automation
 
 Wake up with music when alarm triggers:

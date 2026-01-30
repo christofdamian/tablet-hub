@@ -24,6 +24,7 @@ import net.damian.tablethub.R
 import net.damian.tablethub.data.preferences.SettingsDataStore
 import net.damian.tablethub.data.repository.ButtonRepository
 import net.damian.tablethub.service.display.NightModeManager
+import net.damian.tablethub.service.tts.TtsManager
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -84,6 +85,9 @@ class MqttService : Service() {
     @Inject
     lateinit var buttonRepository: ButtonRepository
 
+    @Inject
+    lateinit var ttsManager: TtsManager
+
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var discoveryPublished = false
 
@@ -97,6 +101,7 @@ class MqttService : Service() {
         when (intent?.action) {
             ACTION_START -> {
                 startForeground(NOTIFICATION_ID, createNotification("Connecting..."))
+                ttsManager.initialize()
                 startMqttConnection()
             }
             ACTION_STOP -> {
@@ -116,6 +121,7 @@ class MqttService : Service() {
     override fun onDestroy() {
         Log.d(TAG, "Service destroyed")
         mqttManager.disconnect()
+        ttsManager.shutdown()
         serviceScope.cancel()
         super.onDestroy()
     }
@@ -180,6 +186,8 @@ class MqttService : Service() {
                 mqttManager.subscribe("tablethub/$deviceId/media_player/set")
                 // Subscribe to media player command topics (for bkbilly/mqtt_media_player)
                 mqttManager.subscribe("tablethub/$deviceId/media/cmd/#")
+                // Subscribe to TTS topic
+                mqttManager.subscribe("tablethub/$deviceId/tts")
                 commandHandler.startListening()
                 Log.d(TAG, "Subscribed to command topics")
 
