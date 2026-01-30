@@ -146,16 +146,17 @@ class PlexRepository @Inject constructor(
 
     /**
      * Get tracks in a playlist.
+     * @param limit Maximum number of tracks to fetch (default 100)
      */
-    suspend fun getPlaylistTracks(playlistRatingKey: String): Result<List<PlexMetadata>> {
+    suspend fun getPlaylistTracks(playlistRatingKey: String, limit: Int = 100): Result<List<PlexMetadata>> {
         val api = serverApi ?: return Result.failure(Exception("Not connected to server"))
         val authToken = token ?: return Result.failure(Exception("Not authenticated"))
 
         return try {
-            val response = api.getPlaylistItems(playlistRatingKey, authToken)
+            val response = api.getPlaylistItems(playlistRatingKey, authToken, start = 0, size = limit)
             if (response.isSuccessful) {
                 val tracks = response.body()?.mediaContainer?.metadata ?: emptyList()
-                Log.d(TAG, "Found ${tracks.size} tracks in playlist $playlistRatingKey")
+                Log.d(TAG, "Found ${tracks.size} tracks in playlist $playlistRatingKey (requested $limit)")
                 Result.success(tracks)
             } else {
                 Result.failure(Exception("Failed to get playlist tracks: ${response.code()}"))

@@ -71,7 +71,7 @@ class MqttCommandHandler @Inject constructor(
         // Handle media player commands (bkbilly/mqtt_media_player format)
         if (message.topic.contains("/media/cmd/")) {
             val command = message.topic.substringAfterLast("/")
-            handleMediaPlayerCommand(command)
+            handleMediaPlayerCommandWithPayload(command, message.payload)
             return
         }
 
@@ -109,6 +109,11 @@ class MqttCommandHandler @Inject constructor(
         Log.d(TAG, "Received media player command: $payload")
         // Payload can be simple command like "play", "pause", etc.
         mediaPlayerPublisher.get().handleCommand(payload, null)
+    }
+
+    private fun handleMediaPlayerCommandWithPayload(command: String, payload: String) {
+        Log.d(TAG, "Received media player command: $command, payload: $payload")
+        mediaPlayerPublisher.get().handleCommand(command, payload)
     }
 
     private fun handleMediaCommand(command: String) {

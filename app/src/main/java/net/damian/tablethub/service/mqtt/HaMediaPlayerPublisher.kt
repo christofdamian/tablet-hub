@@ -100,6 +100,7 @@ class HaMediaPlayerPublisher @Inject constructor(
             put("command_next_payload", "next")
             put("command_previous_topic", "$baseTopic/cmd/previous")
             put("command_previous_payload", "previous")
+            put("command_playmedia_topic", "$baseTopic/cmd/playmedia")
 
             // Device info
             put("device", JSONObject().apply {
@@ -200,6 +201,12 @@ class HaMediaPlayerPublisher @Inject constructor(
     fun handleCommand(command: String, payload: String?) {
         Log.d(TAG, "Received media player command: $command, payload: $payload")
 
+        // Handle playmedia command separately as it requires async operations
+        if (command.lowercase() == "playmedia") {
+            handlePlayMedia(payload ?: command)
+            return
+        }
+
         // MediaController methods must be called on main thread
         mainScope.launch {
             when (command.lowercase()) {
@@ -210,6 +217,90 @@ class HaMediaPlayerPublisher @Inject constructor(
                 "previous", "previous_track" -> playbackManager.skipToPrevious()
                 "toggle", "playpause" -> playbackManager.togglePlayPause()
             }
+        }
+    }
+
+    private fun handlePlayMedia(payload: String) {
+        scope.launch {
+            try {
+                val json = JSONObject(payload)
+                // Support both bkbilly format (media_type/media_id) and standard HA format (media_content_type/media_content_id)
+                val contentType = json.optString("media_type", "").ifEmpty {
+                    json.optString("media_content_type", "")
+                }
+                val contentId = json.optString("media_id", "").ifEmpty {
+                    json.optString("media_content_id", "")
+                }
+
+                Log.d(TAG, "Play media request: type=$contentType, id=$contentId")
+
+                when (contentType.lowercase()) {
+                    "playlist" -> playPlaylist(contentId)
+                    else -> Log.w(TAG, "Unsupported media content type: $contentType")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to parse play_media command: $payload", e)
+            }
+        }
+    }
+
+    private suspend fun playPlaylist(playlistName: String) {
+        Log.d(TAG, "Looking up playlist: $playlistName")
+
+        // Get all playlists
+        val playlistsResult = plexRepository.getPlaylists()
+        if (playlistsResult.isFailure) {
+            Log.e(TAG, "Failed to get playlists: ${playlistsResult.exceptionOrNull()?.message}")
+            return
+        }
+
+        val playlists = playlistsResult.getOrNull() ?: return
+
+        // Find playlist by name (case-insensitive)
+        val playlist = playlists.find { it.title.equals(playlistName, ignoreCase = true) }
+        if (playlist == null) {
+            Log.w(TAG, "Playlist not found: $playlistName")
+            return
+        }
+
+        Log.d(TAG, "Found playlist: ${playlist.title} (${playlist.ratingKey})")
+
+        // Get playlist tracks (limit to 100 to avoid timeout on large playlists)
+        val maxTracks = 100
+        val tracksResult = plexRepository.getPlaylistTracks(playlist.ratingKey, limit = maxTracks)
+        if (tracksResult.isFailure) {
+            Log.e(TAG, "Failed to get playlist tracks: ${tracksResult.exceptionOrNull()?.message}")
+            return
+        }
+
+        val tracks = tracksResult.getOrNull()
+        if (tracks.isNullOrEmpty()) {
+            Log.w(TAG, "Playlist is empty: $playlistName")
+            return
+        }
+
+        // Filter tracks that have valid media info
+        val validTracks = tracks.filter { track ->
+            val hasMedia = track.media?.firstOrNull()?.parts?.firstOrNull()?.key != null
+            if (!hasMedia) {
+                Log.w(TAG, "Track '${track.title}' has no media info, skipping")
+            }
+            hasMedia
+        }
+
+        if (validTracks.isEmpty()) {
+            Log.w(TAG, "No valid tracks in playlist: $playlistName")
+            return
+        }
+
+        // Use all valid tracks (API already limits to maxTracks)
+        val limitedTracks = validTracks
+
+        Log.d(TAG, "Starting playback of ${limitedTracks.size} tracks from playlist: $playlistName")
+
+        // Start playback on main thread
+        withContext(Dispatchers.Main) {
+            playbackManager.playQueue(limitedTracks, 0)
         }
     }
 }

@@ -144,11 +144,14 @@ interface PlexServerApi {
 
     /**
      * Get tracks in a playlist.
+     * Use X-Plex-Container-Start and X-Plex-Container-Size for pagination.
      */
     @GET("playlists/{ratingKey}/items")
     suspend fun getPlaylistItems(
         @Path("ratingKey") ratingKey: String,
         @Header("X-Plex-Token") token: String,
+        @Query("X-Plex-Container-Start") start: Int = 0,
+        @Query("X-Plex-Container-Size") size: Int = 100,
         @Header("Accept") accept: String = "application/json"
     ): Response<PlexMediaContainer>
 
