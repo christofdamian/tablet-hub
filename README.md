@@ -24,17 +24,71 @@ An Android tablet app designed as an always-on dashboard to replace a Nest Hub. 
 ## Home Assistant Integration
 
 The app registers as an HA device via MQTT discovery, exposing:
-- `sensor.tablethub_next_alarm`
-- `binary_sensor.tablethub_alarm_ringing`
-- `switch.tablethub_alarm_*`
-- `media_player.mqtt_media_player_tablethub_music`
-- `switch.tablethub_screen`
-- `switch.tablethub_night_mode`
-- `light.tablethub_brightness`
-- `sensor.tablethub_battery`
 
-**MQTT Events:**
-- `tablethub/{device_id}/event` - Pre-alarm events for HA automations (sunrise lights, etc.)
+**Sensors:**
+- `sensor.tablethub_next_alarm` - Next scheduled alarm time (attributes: alarm_label, alarm_id)
+- `sensor.tablethub_battery` - Battery level % (attributes: charging)
+- `binary_sensor.tablethub_alarm_ringing` - ON when alarm is actively ringing
+
+**Switches:**
+- `switch.tablethub_screen` - Turn screen on/off
+- `switch.tablethub_night_mode` - Toggle night mode (red-shifted dim display)
+- `switch.tablethub_alarm_*` - Enable/disable individual alarms
+
+**Lights:**
+- `light.tablethub_brightness` - Screen brightness control (0-255)
+
+**Buttons:**
+- `button.tablethub_dismiss_alarm` - Dismiss currently ringing alarm
+- `button.tablethub_trigger_alarm` - Manually trigger the alarm
+
+**Media Player:**
+- `media_player.mqtt_media_player_tablethub_music` - Plex music playback (requires bkbilly integration)
+
+**Device Triggers:**
+- Shortcut button presses are exposed as device triggers for automations
+
+### Pre-Alarm Events
+
+The app publishes pre-alarm events to `tablethub/{device_id}/event` before an alarm fires. Use these to trigger automations like gradually turning on lights.
+
+**Event payload:**
+```json
+{
+  "event_type": "tablethub_pre_alarm",
+  "alarm_id": "1",
+  "alarm_time": "07:00",
+  "alarm_label": "Wake up",
+  "minutes_until": 15
+}
+```
+
+**Example automation - Sunrise lights before alarm:**
+```yaml
+automation:
+  - alias: "TabletHub - Sunrise lights before alarm"
+    trigger:
+      - platform: mqtt
+        topic: "tablethub/tablethub/event"
+    condition:
+      - condition: template
+        value_template: "{{ trigger.payload_json.event_type == 'tablethub_pre_alarm' }}"
+    action:
+      - action: light.turn_on
+        target:
+          entity_id: light.bedroom
+        data:
+          brightness_pct: 1
+      - repeat:
+          count: 14
+          sequence:
+            - delay: "00:01:00"
+            - action: light.turn_on
+              target:
+                entity_id: light.bedroom
+              data:
+                brightness_pct: "{{ (repeat.index + 1) * 7 }}"
+```
 
 ### Media Player Setup
 
