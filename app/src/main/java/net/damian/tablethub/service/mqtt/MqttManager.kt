@@ -203,7 +203,8 @@ class MqttManager @Inject constructor(
     private fun queueMessage(topic: String, payload: String, qos: Int, retained: Boolean) {
         if (pendingMessages.size >= RETRY_QUEUE_MAX_SIZE) {
             // Remove oldest message if queue is full
-            pendingMessages.poll()
+            val dropped = pendingMessages.poll()
+            Log.w(TAG, "MQTT queue full ($RETRY_QUEUE_MAX_SIZE), dropped oldest message to ${dropped?.topic}")
         }
         pendingMessages.offer(PendingMessage(topic, payload, qos, retained, System.currentTimeMillis()))
     }

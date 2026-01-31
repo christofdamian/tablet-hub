@@ -194,13 +194,14 @@ class HaMediaPlayerPublisher @Inject constructor(
         scope.launch {
             try {
                 val request = Request.Builder().url(url).build()
-                val response = httpClient.newCall(request).execute()
-                if (response.isSuccessful) {
-                    val bytes = response.body?.bytes()
-                    if (bytes != null) {
-                        cachedArtworkBase64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
-                        mqttManager.publish("$baseTopic/albumart", cachedArtworkBase64!!, retained = true)
-                        Log.d(TAG, "Published album art (${bytes.size} bytes)")
+                httpClient.newCall(request).execute().use { response ->
+                    if (response.isSuccessful) {
+                        val bytes = response.body?.bytes()
+                        if (bytes != null) {
+                            cachedArtworkBase64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
+                            mqttManager.publish("$baseTopic/albumart", cachedArtworkBase64!!, retained = true)
+                            Log.d(TAG, "Published album art (${bytes.size} bytes)")
+                        }
                     }
                 }
             } catch (e: Exception) {

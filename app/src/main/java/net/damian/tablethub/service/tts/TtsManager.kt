@@ -31,6 +31,7 @@ class TtsManager @Inject constructor(
     private var audioFocusRequest: AudioFocusRequest? = null
 
     private val pendingUtterances = mutableSetOf<String>()
+    private var pendingMessage: Pair<String, String?>? = null  // message, language
 
     fun initialize() {
         if (tts != null) return
@@ -41,6 +42,12 @@ class TtsManager @Inject constructor(
                 tts?.language = Locale.getDefault()
                 tts?.setOnUtteranceProgressListener(utteranceListener)
                 Log.d(TAG, "TTS initialized successfully")
+
+                // Speak any pending message that was queued before initialization
+                pendingMessage?.let { (message, language) ->
+                    pendingMessage = null
+                    speak(message, language)
+                }
             } else {
                 Log.e(TAG, "TTS initialization failed with status: $status")
             }
@@ -49,14 +56,9 @@ class TtsManager @Inject constructor(
 
     fun speak(message: String, language: String? = null) {
         if (!isInitialized) {
-            Log.w(TAG, "TTS not initialized, initializing now")
+            Log.w(TAG, "TTS not initialized, queuing message and initializing")
+            pendingMessage = message to language
             initialize()
-            // Queue the message to be spoken after initialization
-            tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                override fun onStart(utteranceId: String?) {}
-                override fun onDone(utteranceId: String?) {}
-                override fun onError(utteranceId: String?) {}
-            })
             return
         }
 
