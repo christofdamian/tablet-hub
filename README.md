@@ -2,6 +2,16 @@
 
 An Android tablet app designed as an always-on dashboard to replace a Nest Hub. It serves as a bedside/kitchen dashboard with alarm clock, Home Assistant controls via MQTT, and Plex music playback.
 
+## Screenshots
+
+| Clock | Quick Actions | Music Library |
+|-------|---------------|---------------|
+| ![Clock](screenshots/clock.png) | ![Quick Actions](screenshots/quick-actions.png) | ![Music](screenshots/music.png) |
+
+| Alarms | Settings | Night Mode |
+|--------|----------|------------|
+| ![Alarms](screenshots/alarms.png) | ![Settings](screenshots/settings.png) | ![Night Mode](screenshots/night-mode.png) |
+
 ## Tech Stack
 
 - Language: Kotlin
