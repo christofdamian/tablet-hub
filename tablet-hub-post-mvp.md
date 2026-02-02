@@ -140,10 +140,8 @@ Improvements to the existing night mode feature.
 - Amber overlay for blue light reduction
 - Controllable via HA automations
 
-**Gradual Transitions:**
-- Fade between normal and night mode instead of instant switch
-- Smooth brightness transitions over 1-2 seconds
-- Optional color temperature shift animation
+**~~Gradual Transitions:~~** ❌ WON'T DO
+- Conflicts with instant NightClockDisplay switch which is preferred
 
 **Sensor Calibration:**
 - Different devices have different light sensor sensitivities
