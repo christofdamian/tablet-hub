@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -30,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import net.damian.tablethub.data.local.entity.AlarmEntity
+import net.damian.tablethub.ui.theme.Dimensions
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,7 +71,11 @@ fun AlarmListSheet(
                     onClick = onAddAlarm,
                     containerColor = MaterialTheme.colorScheme.primary
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add alarm")
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = "Add alarm",
+                        modifier = Modifier.size(Dimensions.FabIconSize)
+                    )
                 }
             }
 
@@ -168,11 +174,15 @@ private fun AlarmItem(
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onDelete) {
+                IconButton(
+                    onClick = onDelete,
+                    modifier = Modifier.size(Dimensions.IconButtonSize)
+                ) {
                     Icon(
                         Icons.Default.Delete,
                         contentDescription = "Delete alarm",
-                        tint = MaterialTheme.colorScheme.error
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(Dimensions.IconSizeDefault)
                     )
                 }
                 Switch(
