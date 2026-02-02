@@ -18,7 +18,7 @@ An Android tablet app designed as an always-on dashboard to replace a Nest Hub. 
 1. **Clock & Alarms** - Large clock display, alarm management, pre-alarm HA triggers
 2. **Quick Actions** - Configurable button grid for HA service calls
 3. **Music Player** - Plex integration with library browsing and playback
-4. **Night Mode** - Ambient light sensor-based auto-dimming with red-shifted display
+4. **Night Mode** - Ambient light sensor-based auto-dimming with color temperature control
 5. **Photo Slideshow** - Future: Google Photos integration
 
 ## Home Assistant Integration
@@ -33,11 +33,14 @@ The app registers as an HA device via MQTT discovery, exposing:
 
 **Switches:**
 - `switch.tablethub_screen` - Turn screen on/off
-- `switch.tablethub_night_mode` - Toggle night mode (red-shifted dim display)
+- `switch.tablethub_night_mode` - Toggle night mode (dims screen, restores brightness on exit)
 - `switch.tablethub_alarm_*` - Enable/disable individual alarms
 
 **Lights:**
 - `light.tablethub_brightness` - Screen brightness control (0-255)
+
+**Numbers:**
+- `number.tablethub_color_temp` - Color temperature warmth (0-100%, amber overlay for eye comfort)
 
 **Buttons:**
 - `button.tablethub_dismiss_alarm` - Dismiss currently ringing alarm
@@ -203,6 +206,48 @@ sequence:
 ```
 
 Replace `weather.home_2` with your weather entity ID (find it in Developer Tools → States).
+
+### Night Mode & Color Temperature
+
+**Night Mode** dims the screen to a low brightness level (default 5/255) for bedside use. When disabled, the previous brightness is automatically restored.
+
+**Color Temperature** adds an amber overlay to reduce blue light, similar to "Night Light" or "Night Shift" features. Values range from 0 (neutral) to 100 (warm amber).
+
+**Bedtime automation example:**
+```yaml
+automation:
+  - alias: "TabletHub - Bedtime mode"
+    trigger:
+      - platform: time
+        at: "22:00:00"
+    action:
+      - action: switch.turn_on
+        target:
+          entity_id: switch.tablethub_night_mode
+      - action: number.set_value
+        target:
+          entity_id: number.tablethub_color_temp
+        data:
+          value: 70
+```
+
+**Morning automation example:**
+```yaml
+automation:
+  - alias: "TabletHub - Morning mode"
+    trigger:
+      - platform: time
+        at: "07:00:00"
+    action:
+      - action: switch.turn_off
+        target:
+          entity_id: switch.tablethub_night_mode
+      - action: number.set_value
+        target:
+          entity_id: number.tablethub_color_temp
+        data:
+          value: 0
+```
 
 ### Example Automations
 
