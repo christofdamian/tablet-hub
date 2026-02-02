@@ -58,6 +58,7 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val mqttConnectionState by viewModel.mqttConnectionState.collectAsState()
+    val currentLux by viewModel.currentLux.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(uiState.saveSuccess) {
@@ -240,6 +241,23 @@ fun SettingsScreen(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     supportingText = { Text("Enter night mode when light falls below this (default: 15)") }
                 )
+
+                // Calibration row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Current light: ${currentLux.toInt()} lux",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    OutlinedButton(
+                        onClick = { viewModel.calibrateLuxThreshold() }
+                    ) {
+                        Text("Use Current")
+                    }
+                }
 
                 OutlinedTextField(
                     value = uiState.nightModeConfig.luxHysteresis.toString(),

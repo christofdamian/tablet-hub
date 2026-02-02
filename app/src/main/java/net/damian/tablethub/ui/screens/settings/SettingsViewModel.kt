@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 import net.damian.tablethub.data.preferences.MqttConfig
 import net.damian.tablethub.data.preferences.NightModeConfig
 import net.damian.tablethub.data.preferences.SettingsDataStore
+import net.damian.tablethub.service.display.NightModeManager
 import net.damian.tablethub.service.mqtt.ConnectionTestResult
 import net.damian.tablethub.service.mqtt.MqttConnectionState
 import net.damian.tablethub.service.mqtt.MqttManager
@@ -19,13 +20,26 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val settingsDataStore: SettingsDataStore,
-    private val mqttManager: MqttManager
+    private val mqttManager: MqttManager,
+    private val nightModeManager: NightModeManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
     val mqttConnectionState: StateFlow<MqttConnectionState> = mqttManager.connectionState
+
+    // Expose current lux for calibration display
+    val currentLux: StateFlow<Float> = nightModeManager.nightModeState
+        .let { flow ->
+            val luxFlow = MutableStateFlow(0f)
+            viewModelScope.launch {
+                flow.collect { state ->
+                    luxFlow.value = state.currentLux
+                }
+            }
+            luxFlow.asStateFlow()
+        }
 
     init {
         loadSettings()
@@ -126,6 +140,17 @@ class SettingsViewModel @Inject constructor(
         val brightnessInt = brightness.toIntOrNull()?.coerceIn(1, 255) ?: return
         _uiState.value = _uiState.value.copy(
             nightModeConfig = _uiState.value.nightModeConfig.copy(nightBrightness = brightnessInt)
+        )
+    }
+
+    /**
+     * Calibrate the lux threshold using the current ambient light reading.
+     * Sets the threshold to the current lux value.
+     */
+    fun calibrateLuxThreshold() {
+        val currentLuxValue = nightModeManager.nightModeState.value.currentLux.toInt()
+        _uiState.value = _uiState.value.copy(
+            nightModeConfig = _uiState.value.nightModeConfig.copy(luxThreshold = currentLuxValue)
         )
     }
 
