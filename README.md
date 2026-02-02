@@ -249,6 +249,72 @@ automation:
           value: 0
 ```
 
+### HA-Controlled Wake-Up (Silent Alarms)
+
+For a fully HA-controlled wake-up experience, disable on-device alarm sounds in **Settings → Alarms → On-device alarm sound**.
+
+When disabled:
+- Alarm triggers and shows snooze/dismiss UI (no sound/vibration)
+- `binary_sensor.tablethub_alarm_ringing` turns ON
+- HA automations handle the wake-up (music, lights, announcements)
+
+**Snooze event:** When snooze is pressed, publishes to `tablethub/{device_id}/event`:
+```json
+{
+  "event_type": "tablethub_alarm_snoozed",
+  "alarm_id": "1",
+  "snooze_minutes": 9
+}
+```
+
+**Full HA wake-up automation example:**
+```yaml
+automation:
+  - alias: "TabletHub - HA Wake-up"
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.tablethub_alarm_ringing
+        to: "on"
+    action:
+      # Turn on lights
+      - action: light.turn_on
+        target:
+          entity_id: light.bedroom
+        data:
+          brightness_pct: 50
+      # Play music
+      - action: media_player.play_media
+        target:
+          entity_id: media_player.tablethub_music
+        data:
+          media_content_id: "Morning Playlist"
+          media_content_type: playlist
+      # Weather announcement
+      - delay: "00:00:05"
+      - action: mqtt.publish
+        data:
+          topic: tablethub/tablethub/tts
+          payload: "Good morning! Time to wake up."
+
+  - alias: "TabletHub - Snooze reaction"
+    trigger:
+      - platform: mqtt
+        topic: "tablethub/tablethub/event"
+    condition:
+      - condition: template
+        value_template: "{{ trigger.payload_json.event_type == 'tablethub_alarm_snoozed' }}"
+    action:
+      # Pause music and dim lights during snooze
+      - action: media_player.media_pause
+        target:
+          entity_id: media_player.tablethub_music
+      - action: light.turn_on
+        target:
+          entity_id: light.bedroom
+        data:
+          brightness_pct: 10
+```
+
 ### Example Automations
 
 **Pre-alarm routine (15 minutes before):**
