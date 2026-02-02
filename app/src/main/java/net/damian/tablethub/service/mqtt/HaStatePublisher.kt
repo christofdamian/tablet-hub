@@ -169,6 +169,16 @@ class HaStatePublisher @Inject constructor(
     }
 
     /**
+     * Update color temperature and publish.
+     */
+    fun updateColorTemp(temp: Int) {
+        currentState.update { state ->
+            state.copy(colorTemp = temp.coerceIn(0, 100))
+        }
+        publishState()
+    }
+
+    /**
      * Publish pre-alarm event for Home Assistant automations.
      * This is published as a separate event (not retained) to the event topic.
      */
@@ -225,6 +235,7 @@ data class TabletHubState(
     val battery: Int = 100,
     @com.squareup.moshi.Json(name = "battery_charging") val batteryCharging: Boolean = false,
     @com.squareup.moshi.Json(name = "night_mode") val nightMode: String = "OFF",
+    @com.squareup.moshi.Json(name = "color_temp") val colorTemp: Int = 0,
     val alarms: Map<String, AlarmState> = emptyMap()
 )
 

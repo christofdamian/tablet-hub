@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import net.damian.tablethub.data.repository.AlarmRepository
 import net.damian.tablethub.service.alarm.AlarmReceiver
 import net.damian.tablethub.service.alarm.AlarmService
+import net.damian.tablethub.service.display.ColorTemperatureManager
 import net.damian.tablethub.service.display.NightModeManager
 import net.damian.tablethub.service.display.ScreenManager
 import net.damian.tablethub.service.tts.TtsManager
@@ -45,6 +46,7 @@ class MqttCommandHandler @Inject constructor(
     private val alarmRepository: AlarmRepository,
     private val haStatePublisher: HaStatePublisher,
     private val nightModeManager: NightModeManager,
+    private val colorTemperatureManager: ColorTemperatureManager,
     private val mediaPlayerPublisher: dagger.Lazy<HaMediaPlayerPublisher>,
     private val ttsManager: TtsManager,
     private val moshi: Moshi
@@ -83,6 +85,18 @@ class MqttCommandHandler @Inject constructor(
             return
         }
 
+        // Handle color temperature command (raw numeric value from HA number entity)
+        if (message.topic.endsWith("/color_temp/set")) {
+            handleColorTempRawValue(message.payload)
+            return
+        }
+
+        // Handle night mode command (raw ON/OFF from HA switch entity)
+        if (message.topic.endsWith("/night_mode/set")) {
+            handleNightModeRawValue(message.payload)
+            return
+        }
+
         if (!message.topic.endsWith("/command")) return
 
         Log.d(TAG, "Received command: ${message.payload}")
@@ -95,6 +109,7 @@ class MqttCommandHandler @Inject constructor(
                 "screen", "ON", "OFF" -> handleScreenCommand(command)
                 "brightness" -> handleBrightnessCommand(command)
                 "night_mode" -> handleNightModeCommand(command)
+                "color_temp" -> handleColorTempCommand(command)
                 "trigger_alarm" -> handleTriggerAlarm()
                 "dismiss_alarm" -> handleDismissAlarm()
                 "enable_alarm" -> handleEnableAlarm(command, true)
@@ -185,6 +200,43 @@ class MqttCommandHandler @Inject constructor(
                 nightModeManager.setNightModeFromHa(false)
             }
         }
+    }
+
+    private fun handleColorTempCommand(command: MqttCommand) {
+        val temp = when (val value = command.value) {
+            is Number -> value.toInt()
+            is String -> value.toIntOrNull() ?: return
+            else -> return
+        }.coerceIn(0, 100)
+
+        applyColorTemperature(temp)
+    }
+
+    private fun handleColorTempRawValue(payload: String) {
+        // HA number entity sends raw numeric value like "50" or "50.0"
+        val temp = payload.trim().toDoubleOrNull()?.toInt()?.coerceIn(0, 100) ?: return
+        applyColorTemperature(temp)
+    }
+
+    private fun handleNightModeRawValue(payload: String) {
+        // HA switch entity sends raw ON/OFF
+        when (payload.trim().uppercase()) {
+            "ON" -> {
+                Log.d(TAG, "Enabling night mode from HA")
+                nightModeManager.setNightModeFromHa(true)
+            }
+            "OFF" -> {
+                Log.d(TAG, "Disabling night mode from HA")
+                nightModeManager.setNightModeFromHa(false)
+            }
+            else -> Log.w(TAG, "Unknown night mode value: $payload")
+        }
+    }
+
+    private fun applyColorTemperature(temp: Int) {
+        Log.d(TAG, "Setting color temperature to $temp")
+        colorTemperatureManager.setColorTemperature(temp)
+        haStatePublisher.updateColorTemp(temp)
     }
 
     private fun handleTriggerAlarm() {

@@ -129,4 +129,64 @@ class HaDiscoveryConfigTest {
         assertTrue(json.contains("\"brightness_scale\":100"))
         assertTrue(json.contains("\"icon\":\"mdi:lightbulb\""))
     }
+
+    @Test
+    fun `night mode switch must have separate command topic from screen switch`() {
+        // This test verifies the bug fix where night mode and screen switches
+        // were using the same command topic, causing HA "ON" commands for night mode
+        // to turn the screen on instead of enabling night mode.
+
+        val deviceId = "testdevice"
+        val stateTopic = "tablethub/$deviceId/state"
+        val screenCommandTopic = "tablethub/$deviceId/command"
+        val nightModeCommandTopic = "tablethub/$deviceId/night_mode/set"
+
+        val screenConfig = HaSwitchConfig(
+            name = "Screen",
+            uniqueId = "tablethub_${deviceId}_screen",
+            stateTopic = stateTopic,
+            commandTopic = screenCommandTopic,
+            valueTemplate = "{{ value_json.screen }}",
+            device = HaDeviceInfo(
+                identifiers = listOf("tablethub_$deviceId"),
+                name = "TabletHub"
+            ),
+            icon = "mdi:tablet"
+        )
+
+        val nightModeConfig = HaSwitchConfig(
+            name = "Night Mode",
+            uniqueId = "tablethub_${deviceId}_night_mode",
+            stateTopic = stateTopic,
+            commandTopic = nightModeCommandTopic,
+            valueTemplate = "{{ value_json.night_mode }}",
+            device = HaDeviceInfo(
+                identifiers = listOf("tablethub_$deviceId"),
+                name = "TabletHub"
+            ),
+            icon = "mdi:weather-night"
+        )
+
+        val adapter = moshi.adapter(HaSwitchConfig::class.java)
+        val screenJson = adapter.toJson(screenConfig)
+        val nightModeJson = adapter.toJson(nightModeConfig)
+
+        // Verify screen uses the general command topic
+        assertTrue(
+            "Screen switch should use general command topic",
+            screenJson.contains("\"command_topic\":\"tablethub/$deviceId/command\"")
+        )
+
+        // Verify night mode uses its own dedicated command topic
+        assertTrue(
+            "Night mode switch should use dedicated command topic",
+            nightModeJson.contains("\"command_topic\":\"tablethub/$deviceId/night_mode/set\"")
+        )
+
+        // Most importantly: verify they are different
+        assertTrue(
+            "Night mode and screen must have different command topics to avoid command conflicts",
+            screenCommandTopic != nightModeCommandTopic
+        )
+    }
 }

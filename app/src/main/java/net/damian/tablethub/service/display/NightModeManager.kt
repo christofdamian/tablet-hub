@@ -38,18 +38,34 @@ class NightModeManager @Inject constructor(
     // Callback for notifying HA state publisher
     var onNightModeChanged: ((Boolean) -> Unit)? = null
 
+    // Track if initial config has been loaded
+    private var initialConfigLoaded = false
+
     init {
         // Load initial config from DataStore
         scope.launch {
             settingsDataStore.nightModeConfig.collect { config ->
                 _nightModeState.update { state ->
-                    state.copy(
-                        isManualEnabled = config.manualEnabled,
-                        isAutoEnabled = config.autoEnabled,
-                        luxThreshold = config.luxThreshold.toFloat(),
-                        luxHysteresis = config.luxHysteresis.toFloat(),
-                        nightBrightness = config.nightBrightness
-                    )
+                    if (!initialConfigLoaded) {
+                        // First load: restore all settings including manual enabled state
+                        initialConfigLoaded = true
+                        state.copy(
+                            isManualEnabled = config.manualEnabled,
+                            isAutoEnabled = config.autoEnabled,
+                            luxThreshold = config.luxThreshold.toFloat(),
+                            luxHysteresis = config.luxHysteresis.toFloat(),
+                            nightBrightness = config.nightBrightness
+                        )
+                    } else {
+                        // Subsequent updates: only update config values, not manual state
+                        // (manual state is already set in-memory by setManualNightMode)
+                        state.copy(
+                            isAutoEnabled = config.autoEnabled,
+                            luxThreshold = config.luxThreshold.toFloat(),
+                            luxHysteresis = config.luxHysteresis.toFloat(),
+                            nightBrightness = config.nightBrightness
+                        )
+                    }
                 }
                 updateActiveState()
             }
@@ -144,11 +160,21 @@ class NightModeManager @Inject constructor(
 
         if (shouldBeActive != state.isActive) {
             Log.d(TAG, "Night mode active changed: $shouldBeActive (lux=${state.currentLux})")
-            _nightModeState.update { it.copy(isActive = shouldBeActive) }
 
-            // Apply night mode brightness
             if (shouldBeActive) {
+                // Entering night mode - store current brightness first, then apply night brightness
+                val currentBrightness = ScreenManager.getBrightness()
+                _nightModeState.update { it.copy(isActive = true, preNightBrightness = currentBrightness) }
                 ScreenManager.setBrightness(state.nightBrightness)
+                Log.d(TAG, "Saved pre-night brightness: $currentBrightness, set night brightness: ${state.nightBrightness}")
+            } else {
+                // Exiting night mode - restore brightness
+                val savedBrightness = state.preNightBrightness
+                _nightModeState.update { it.copy(isActive = false, preNightBrightness = null) }
+                savedBrightness?.let {
+                    ScreenManager.setBrightness(it)
+                    Log.d(TAG, "Restored pre-night brightness: $it")
+                }
             }
 
             // Notify HA
@@ -167,5 +193,6 @@ data class NightModeState(
     val currentLux: Float = 100f,
     val luxThreshold: Float = 15f,
     val luxHysteresis: Float = 5f,
-    val nightBrightness: Int = 5
+    val nightBrightness: Int = 5,
+    val preNightBrightness: Int? = null  // Brightness level before entering night mode
 )

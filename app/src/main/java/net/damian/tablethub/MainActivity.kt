@@ -15,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import dagger.hilt.android.AndroidEntryPoint
+import net.damian.tablethub.service.display.ColorTemperatureManager
 import net.damian.tablethub.service.display.LightSensorService
 import net.damian.tablethub.service.display.NightModeManager
 import net.damian.tablethub.service.display.ScreenManager
@@ -33,6 +34,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var lightSensorService: LightSensorService
+
+    @Inject
+    lateinit var colorTemperatureManager: ColorTemperatureManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -78,6 +82,9 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
+        // Initialize color temperature overlay after setContent
+        colorTemperatureManager.setActivity(this)
     }
 
     override fun onResume() {
@@ -92,6 +99,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         lightSensorService.stopListening()
+        colorTemperatureManager.clearActivity()
         ScreenManager.clearActivity()
         super.onDestroy()
     }

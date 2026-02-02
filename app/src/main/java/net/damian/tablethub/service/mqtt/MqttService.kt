@@ -186,6 +186,10 @@ class MqttService : Service() {
                 mqttManager.subscribe("tablethub/$deviceId/media_player/set")
                 // Subscribe to media player command topics (for bkbilly/mqtt_media_player)
                 mqttManager.subscribe("tablethub/$deviceId/media/cmd/#")
+                // Subscribe to night mode command topic
+                mqttManager.subscribe("tablethub/$deviceId/night_mode/set")
+                // Subscribe to color temperature command topic
+                mqttManager.subscribe("tablethub/$deviceId/color_temp/set")
                 // Subscribe to TTS topic
                 mqttManager.subscribe("tablethub/$deviceId/tts")
                 commandHandler.startListening()

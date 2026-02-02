@@ -31,6 +31,8 @@ class HaDiscovery @Inject constructor(
 
     private val stateTopic: String get() = "tablethub/$deviceId/state"
     private val commandTopic: String get() = "tablethub/$deviceId/command"
+    private val nightModeCommandTopic: String get() = "tablethub/$deviceId/night_mode/set"
+    private val colorTempCommandTopic: String get() = "tablethub/$deviceId/color_temp/set"
     private val mediaStateTopic: String get() = "tablethub/$deviceId/media/state"
     private val mediaCommandTopic: String get() = "tablethub/$deviceId/media/command"
     private val buttonPressTopic: String get() = "tablethub/$deviceId/button/press"
@@ -55,6 +57,7 @@ class HaDiscovery @Inject constructor(
         publishBrightnessLight()
         publishBatterySensor()
         publishNightModeSwitch()
+        publishColorTemperatureNumber()
         publishDismissAlarmButton()
         publishTriggerAlarmButton()
 
@@ -71,6 +74,7 @@ class HaDiscovery @Inject constructor(
             "$HA_DISCOVERY_PREFIX/light/${deviceId}/brightness/config",
             "$HA_DISCOVERY_PREFIX/sensor/${deviceId}/battery/config",
             "$HA_DISCOVERY_PREFIX/switch/${deviceId}/night_mode/config",
+            "$HA_DISCOVERY_PREFIX/number/${deviceId}/color_temp/config",
             "$HA_DISCOVERY_PREFIX/button/${deviceId}/dismiss_alarm/config",
             "$HA_DISCOVERY_PREFIX/button/${deviceId}/trigger_alarm/config"
         )
@@ -180,13 +184,31 @@ class HaDiscovery @Inject constructor(
             name = "Night Mode",
             uniqueId = "tablethub_${deviceId}_night_mode",
             stateTopic = stateTopic,
-            commandTopic = commandTopic,
+            commandTopic = nightModeCommandTopic,
             valueTemplate = "{{ value_json.night_mode }}",
             device = deviceInfo,
             icon = "mdi:weather-night"
         )
 
         publishConfig("switch", "night_mode", config)
+    }
+
+    private fun publishColorTemperatureNumber() {
+        val config = HaNumberConfig(
+            name = "Color Temperature",
+            uniqueId = "tablethub_${deviceId}_color_temp",
+            stateTopic = stateTopic,
+            commandTopic = colorTempCommandTopic,
+            valueTemplate = "{{ value_json.color_temp }}",
+            device = deviceInfo,
+            icon = "mdi:sun-thermometer",
+            min = 0,
+            max = 100,
+            step = 1,
+            unitOfMeasurement = "%"
+        )
+
+        publishConfig("number", "color_temp", config)
     }
 
     private fun publishDismissAlarmButton() {

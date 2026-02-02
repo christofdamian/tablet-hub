@@ -97,3 +97,18 @@ data class HaDeviceTriggerConfig(
     val payload: String,
     val device: HaDeviceInfo
 )
+
+@JsonClass(generateAdapter = true)
+data class HaNumberConfig(
+    val name: String,
+    @Json(name = "unique_id") val uniqueId: String,
+    @Json(name = "state_topic") val stateTopic: String,
+    @Json(name = "command_topic") val commandTopic: String,
+    @Json(name = "value_template") val valueTemplate: String? = null,
+    val device: HaDeviceInfo,
+    val icon: String? = null,
+    val min: Int = 0,
+    val max: Int = 100,
+    val step: Int = 1,
+    @Json(name = "unit_of_measurement") val unitOfMeasurement: String? = "%"
+)
