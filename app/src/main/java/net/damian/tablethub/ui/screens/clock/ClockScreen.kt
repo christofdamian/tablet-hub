@@ -32,6 +32,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import net.damian.tablethub.ui.components.ClockDisplay
 import net.damian.tablethub.ui.components.NextAlarmDisplay
 import net.damian.tablethub.ui.components.NowPlayingBar
+import net.damian.tablethub.ui.components.SnoozeStatusDisplay
 import net.damian.tablethub.ui.components.WeatherWidget
 import net.damian.tablethub.ui.theme.Dimensions
 
@@ -47,6 +48,7 @@ fun ClockScreen(
     val nextAlarmText by viewModel.nextAlarmText.collectAsState()
     val editingAlarm by viewModel.editingAlarm.collectAsState()
     val showAlarmEditor by viewModel.showAlarmEditor.collectAsState()
+    val snoozeInfo by viewModel.snoozeInfo.collectAsState()
 
     var showAlarmList by remember { mutableStateOf(false) }
 
@@ -67,6 +69,12 @@ fun ClockScreen(
                 NextAlarmDisplay(
                     nextAlarmText = nextAlarmText,
                     modifier = Modifier.padding(top = 32.dp)
+                )
+
+                SnoozeStatusDisplay(
+                    snoozeEndTime = snoozeInfo?.snoozeEndTime,
+                    onCancel = { viewModel.cancelSnooze() },
+                    modifier = Modifier.padding(top = 16.dp)
                 )
             }
 

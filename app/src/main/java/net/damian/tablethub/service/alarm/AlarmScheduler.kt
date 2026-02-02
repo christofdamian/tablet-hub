@@ -19,12 +19,15 @@ import javax.inject.Singleton
 
 @Singleton
 class AlarmScheduler @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val snoozeManager: SnoozeManager
 ) {
     companion object {
         private const val TAG = "AlarmScheduler"
         // Use a different request code range for pre-alarms to avoid conflicts
         private const val PRE_ALARM_REQUEST_CODE_OFFSET = 100000
+        // Use a different request code range for snooze alarms
+        private const val SNOOZE_REQUEST_CODE_OFFSET = 200000
     }
 
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
@@ -145,6 +148,59 @@ class AlarmScheduler @Inject constructor(
         )
 
         alarmManager.cancel(preAlarmPendingIntent)
+    }
+
+    /**
+     * Schedule a snooze alarm to fire after the specified number of minutes.
+     */
+    fun scheduleSnooze(alarmId: Long, alarmLabel: String, snoozeMinutes: Int) {
+        val snoozeTime = LocalDateTime.now().plusMinutes(snoozeMinutes.toLong())
+        val triggerMillis = snoozeTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+
+        val intent = Intent(context, AlarmReceiver::class.java).apply {
+            action = AlarmReceiver.ACTION_ALARM_FIRED
+            putExtra(AlarmReceiver.EXTRA_ALARM_ID, alarmId)
+            putExtra(AlarmReceiver.EXTRA_ALARM_LABEL, alarmLabel)
+        }
+
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            SNOOZE_REQUEST_CODE_OFFSET + alarmId.toInt(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Use setAlarmClock for highest priority (shows in status bar)
+        val alarmClockInfo = AlarmManager.AlarmClockInfo(
+            triggerMillis,
+            pendingIntent
+        )
+
+        alarmManager.setAlarmClock(alarmClockInfo, pendingIntent)
+        Log.d(TAG, "Scheduled snooze alarm $alarmId for $snoozeTime ($snoozeMinutes minutes)")
+
+        // Update snooze state
+        snoozeManager.setSnooze(alarmId, alarmLabel, snoozeTime)
+    }
+
+    /**
+     * Cancel a snoozed alarm.
+     */
+    fun cancelSnooze(alarmId: Long) {
+        val intent = Intent(context, AlarmReceiver::class.java).apply {
+            action = AlarmReceiver.ACTION_ALARM_FIRED
+        }
+
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            SNOOZE_REQUEST_CODE_OFFSET + alarmId.toInt(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        alarmManager.cancel(pendingIntent)
+        snoozeManager.clearSnoozeForAlarm(alarmId)
+        Log.d(TAG, "Cancelled snooze alarm $alarmId")
     }
 
     fun canScheduleExactAlarms(): Boolean {

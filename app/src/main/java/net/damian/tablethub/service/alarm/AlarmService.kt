@@ -60,12 +60,19 @@ class AlarmService : Service() {
     @Inject
     lateinit var settingsDataStore: SettingsDataStore
 
+    @Inject
+    lateinit var alarmScheduler: AlarmScheduler
+
+    @Inject
+    lateinit var snoozeManager: SnoozeManager
+
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private var mediaPlayer: MediaPlayer? = null
     private var usingPlexPlayback: Boolean = false
     private var vibrator: Vibrator? = null
     private var currentAlarmId: Long = -1
+    private var currentAlarmLabel: String = ""
 
     override fun onCreate() {
         super.onCreate()
@@ -79,6 +86,10 @@ class AlarmService : Service() {
                 val alarmLabel = intent.getStringExtra(AlarmReceiver.EXTRA_ALARM_LABEL) ?: ""
                 val plexPlaylistId = intent.getStringExtra(EXTRA_PLEX_PLAYLIST_ID)
                 currentAlarmId = alarmId
+                currentAlarmLabel = alarmLabel
+
+                // Clear any active snooze since the alarm is now firing
+                snoozeManager.clearSnoozeForAlarm(alarmId)
 
                 startForeground(NOTIFICATION_ID, createNotification(alarmLabel))
 
@@ -274,8 +285,7 @@ class AlarmService : Service() {
 
     private fun snoozeAlarm(alarmId: Long): Int {
         val snoozeMinutes = SNOOZE_DURATION_MINUTES
-        // TODO: Re-schedule alarm for snooze duration
-        // This will be implemented when we integrate with AlarmScheduler
+        alarmScheduler.scheduleSnooze(alarmId, currentAlarmLabel, snoozeMinutes)
         Log.d(TAG, "Alarm $alarmId snoozed for $snoozeMinutes minutes")
         return snoozeMinutes
     }

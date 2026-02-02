@@ -15,6 +15,8 @@ import kotlinx.coroutines.launch
 import net.damian.tablethub.data.local.entity.AlarmEntity
 import net.damian.tablethub.data.repository.AlarmRepository
 import net.damian.tablethub.service.alarm.AlarmScheduler
+import net.damian.tablethub.service.alarm.SnoozeInfo
+import net.damian.tablethub.service.alarm.SnoozeManager
 import net.damian.tablethub.service.mqtt.HaStatePublisher
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -27,7 +29,8 @@ import javax.inject.Inject
 class ClockViewModel @Inject constructor(
     private val alarmRepository: AlarmRepository,
     private val alarmScheduler: AlarmScheduler,
-    private val haStatePublisher: HaStatePublisher
+    private val haStatePublisher: HaStatePublisher,
+    private val snoozeManager: SnoozeManager
 ) : ViewModel() {
 
     val alarms: StateFlow<List<AlarmEntity>> = alarmRepository.getAllAlarms()
@@ -36,6 +39,8 @@ class ClockViewModel @Inject constructor(
     val nextAlarmText: StateFlow<String?> = alarmRepository.getEnabledAlarms()
         .map { alarms -> calculateNextAlarm(alarms) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    val snoozeInfo: StateFlow<SnoozeInfo?> = snoozeManager.snoozeState
 
     init {
         // Observe alarms and publish state updates to HA
@@ -129,6 +134,12 @@ class ClockViewModel @Inject constructor(
             alarmRepository.setAlarmEnabled(alarm.id, newEnabled)
             val updatedAlarm = alarm.copy(enabled = newEnabled)
             alarmScheduler.scheduleAlarm(updatedAlarm)
+        }
+    }
+
+    fun cancelSnooze() {
+        snoozeInfo.value?.let { info ->
+            alarmScheduler.cancelSnooze(info.alarmId)
         }
     }
 
