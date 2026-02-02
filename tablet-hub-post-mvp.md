@@ -4,34 +4,9 @@ Features to add after the core app (clock/alarms, buttons, music player, HA inte
 
 ---
 
-## 1. Google Photos Background
+## ~~1. Google Photos Background~~ ❌ WON'T DO
 
-Replace the plain clock screen background with a Google Photos slideshow.
-
-**Functionality:**
-- Photo fills screen, clock overlays on top with drop shadow for readability
-- Ken Burns effect (subtle pan/zoom animation)
-- Configurable rotation interval (e.g., 30 seconds, 1 minute)
-- Album picker in settings (select one or more albums)
-- Pause rotation on touch, resume after timeout
-- Respect night mode (dim or disable during sleep hours)
-
-**Technical:**
-- Google Photos API with OAuth authentication
-- Cache photos locally for offline/fast display
-- Preload next image for smooth transitions
-
-**Clock Screen Layout:**
-```
-┌─────────────────────────────────┐
-│  ☀️ 18°               07:00    │
-│                                 │
-│      [Google Photo fills       │
-│         entire background]      │
-│                                 │
-│               ⏰ 07:30 Mon      │
-└─────────────────────────────────┘
-```
+Google Photos API no longer viable. Would need alternative approach (local files).
 
 ---
 
@@ -176,12 +151,10 @@ Improvements to the existing night mode feature.
 - Add calibration option or per-device presets
 - "Calibrate in dark room" wizard
 
-**Time-Based Schedule:**
-- In addition to sensor-based switching
-- Configure night mode hours (e.g., 22:00-07:00)
-- Combine with sensor: schedule AND dark = night mode
+**~~Time-Based Schedule:~~** ❌ WON'T DO
+- Can be handled via HA automations instead
 
-## 7. Improve the media browsing for the Music Player
+## 7. Improve the media browsing for the Music Player 📋 LATER
 - load the data async and on-demand when scrolling, just load the first two pages first
 - add a scroll bar (if possible showing the current place in the alphabet, like in Google Photos)
 
@@ -229,21 +202,8 @@ suspend fun search(
 
 ## Priority Order
 
-0. **Improve the media browsing for the Music Player** – async loading, scroll bar, search
-1. ~~**Weather widget**~~ ✅ DONE
-2. ~~**TTS support**~~ ✅ DONE
-3. ~~**HA-driven alarm timing**~~ ✅ DONE (sensor.tablethub_alarm_countdown)
-4. **Night mode settings UI** – configure thresholds and brightness
-
-## Some day
-1. **Google Photos background** – most complex (OAuth, caching, overlay rendering)
-   Since we can't support Google Photos any more, maybe we have to switch to local files
-
----
-
-## Notes
-
-- All features integrate with existing MQTT/HA architecture
-- No changes to core alarm, button, or music player functionality
-- Google Photos requires additional API credentials and OAuth flow
-- Weather and TTS can be added incrementally without breaking existing features
+0. ~~**Weather widget**~~ ✅ DONE
+1. ~~**TTS support**~~ ✅ DONE
+2. ~~**HA-driven alarm timing**~~ ✅ DONE (sensor.tablethub_alarm_countdown)
+3. **Night mode settings UI** – configure thresholds and brightness
+4. **Media player improvements** 📋 LATER – async loading, scroll bar, search
