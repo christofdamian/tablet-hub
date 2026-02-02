@@ -35,105 +35,21 @@ Replace the plain clock screen background with a Google Photos slideshow.
 
 ---
 
-## 2. Weather Widget
+## ~~2. Weather Widget~~ ✅ DONE
 
-Display current weather on the clock screen, pulled from Home Assistant.
-
-**Functionality:**
-- Show current temperature and condition icon
-- Optional: humidity, high/low, short forecast
-- Tap to expand with more detail (or link to weather screen)
-- Updates via MQTT from HA sensors
-
-**HA Entities to Subscribe:**
-```
-sensor.weather_temperature
-sensor.weather_condition
-sensor.weather_humidity (optional)
-weather.home (for forecast)
-```
-
-**Display:**
-- Top corner of clock screen
-- Icon + temperature as primary
-- Condition text or forecast as secondary (optional)
+Implemented. See README.md for setup instructions.
 
 ---
 
-## 3. TTS / Voice Announcements
+## ~~3. TTS / Voice Announcements~~ ✅ DONE
 
-Allow Home Assistant to speak through the tablet using text-to-speech.
-
-**Functionality:**
-- Tablet accepts TTS audio as a media_player target
-- HA generates audio via its TTS integration, tablet plays it
-- Volume respects current media_player volume or separate announcement volume
-- Optional: duck current music during announcement, resume after
-
-**Usage in HA:**
-```yaml
-- service: tts.speak
-  target:
-    entity_id: media_player.tablethub_bedroom
-  data:
-    message: >
-      Good morning. It's {{ states('sensor.weather_temperature') }}
-      degrees and {{ states('sensor.weather_condition') }}.
-```
-
-**Use Cases:**
-- Morning weather announcement as part of alarm routine
-- Doorbell/security announcements
-- Calendar reminders
-- Custom automations
-
-**Technical:**
-- Already supported via media_player entity – TTS services send audio URL
-- May need to handle `play_media` with `media_content_type: music` vs `announcement`
-- Consider brief audio focus handling (pause music → play TTS → resume)
+Implemented with native Android TTS. Supports plain text or JSON with language. Auto-ducks music during announcements. See README.md for usage.
 
 ---
 
-## 4. HA-Driven Alarm Timing
+## ~~4. HA-Driven Alarm Timing~~ ✅ DONE
 
-Let Home Assistant control pre-alarm routines based on `sensor.tablethub_next_alarm` instead of configuring offsets on the tablet.
-
-**Current (MVP):**
-- Tablet has per-alarm pre-offset setting
-- Tablet fires `tablethub_pre_alarm` event X minutes before
-
-**Post-MVP Option:**
-- Tablet just exposes `sensor.tablethub_next_alarm` (ISO timestamp)
-- HA calculates timing and triggers automations independently
-- Simplifies tablet app, gives full flexibility to HA
-
-**HA Template Sensor Example:**
-```yaml
-template:
-  - sensor:
-      - name: "Bedroom Alarm Minutes Remaining"
-        state: >
-          {% set alarm = states('sensor.tablethub_next_alarm') | as_datetime %}
-          {% if alarm %}
-            {{ ((alarm - now()).total_seconds() / 60) | round(0) }}
-          {% else %}
-            unknown
-          {% endif %}
-        unit_of_measurement: "min"
-```
-
-**HA Trigger Example:**
-```yaml
-trigger:
-  - platform: template
-    value_template: >
-      {{ states('sensor.bedroom_alarm_minutes_remaining') | int <= 15 }}
-```
-
-**Benefit:**
-- Change pre-alarm timing (15 min, 30 min, etc.) entirely in HA
-- Different routines for different days/conditions
-- No tablet app changes needed
+Implemented via `sensor.tablethub_alarm_countdown` which publishes minutes until next alarm. See README.md for automation examples.
 
 ---
 
@@ -241,10 +157,14 @@ Improvements to the existing night mode feature.
   - Night brightness level (default: 5/255)
   - Enable/disable auto mode vs manual only
 
-**Brightness Restoration:**
-- Remember brightness level before entering night mode
-- Restore previous brightness when exiting night mode
-- Currently exits at night brightness (5) requiring manual adjustment
+**~~Brightness Restoration:~~** ✅ DONE
+- ~~Remember brightness level before entering night mode~~
+- ~~Restore previous brightness when exiting night mode~~
+
+**~~Color Temperature:~~** ✅ DONE (bonus feature)
+- Added `number.tablethub_color_temp` entity (0-100% warmth)
+- Amber overlay for blue light reduction
+- Controllable via HA automations
 
 **Gradual Transitions:**
 - Fade between normal and night mode instead of instant switch
@@ -309,10 +229,10 @@ suspend fun search(
 
 ## Priority Order
 
-0. **Improve the media browsing for the Music Player**
-1. **Weather widget** – easiest, just subscribe to HA sensors via MQTT
-2. **TTS support** – mostly free via existing media_player, minor audio focus handling
-3. **HA-driven alarm timing** – no tablet changes, just HA templates
+0. **Improve the media browsing for the Music Player** – async loading, scroll bar, search
+1. ~~**Weather widget**~~ ✅ DONE
+2. ~~**TTS support**~~ ✅ DONE
+3. ~~**HA-driven alarm timing**~~ ✅ DONE (sensor.tablethub_alarm_countdown)
 4. **Night mode settings UI** – configure thresholds and brightness
 
 ## Some day
