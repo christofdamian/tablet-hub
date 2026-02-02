@@ -21,9 +21,12 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import net.damian.tablethub.AlarmFiringActivity
 import net.damian.tablethub.R
+import net.damian.tablethub.data.preferences.SettingsDataStore
 import net.damian.tablethub.plex.PlexRepository
 import net.damian.tablethub.service.mqtt.HaStatePublisher
 import net.damian.tablethub.service.music.PlaybackManager
@@ -42,6 +45,7 @@ class AlarmService : Service() {
 
         const val CHANNEL_ID = "alarm_channel"
         const val NOTIFICATION_ID = 1001
+        const val SNOOZE_DURATION_MINUTES = 9
     }
 
     @Inject
@@ -52,6 +56,9 @@ class AlarmService : Service() {
 
     @Inject
     lateinit var plexRepository: PlexRepository
+
+    @Inject
+    lateinit var settingsDataStore: SettingsDataStore
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -75,13 +82,17 @@ class AlarmService : Service() {
 
                 startForeground(NOTIFICATION_ID, createNotification(alarmLabel))
 
-                if (plexPlaylistId != null) {
-                    startPlexPlaylistAlarm(plexPlaylistId)
-                } else {
-                    startAlarmSound()
+                // Check if on-device alarm sound is enabled
+                val soundEnabled = runBlocking { settingsDataStore.alarmSoundEnabled.first() }
+                if (soundEnabled) {
+                    if (plexPlaylistId != null) {
+                        startPlexPlaylistAlarm(plexPlaylistId)
+                    } else {
+                        startAlarmSound()
+                    }
+                    startVibration()
                 }
-
-                startVibration()
+                // Always show the alarm UI (snooze/dismiss)
                 launchAlarmActivity(alarmId, alarmLabel)
 
                 // Publish alarm ringing state to HA
@@ -96,9 +107,10 @@ class AlarmService : Service() {
 
             ACTION_SNOOZE_ALARM -> {
                 val alarmId = intent.getLongExtra(AlarmReceiver.EXTRA_ALARM_ID, -1)
-                snoozeAlarm(alarmId)
+                val snoozeMinutes = snoozeAlarm(alarmId)
                 stopAlarm()
                 haStatePublisher.updateAlarmRinging(false)
+                haStatePublisher.publishSnoozeEvent(alarmId, snoozeMinutes)
                 stopSelf()
             }
         }
@@ -260,8 +272,11 @@ class AlarmService : Service() {
         startActivity(intent)
     }
 
-    private fun snoozeAlarm(alarmId: Long) {
-        // TODO: Re-schedule alarm for snooze duration (default 9 minutes)
+    private fun snoozeAlarm(alarmId: Long): Int {
+        val snoozeMinutes = SNOOZE_DURATION_MINUTES
+        // TODO: Re-schedule alarm for snooze duration
         // This will be implemented when we integrate with AlarmScheduler
+        Log.d(TAG, "Alarm $alarmId snoozed for $snoozeMinutes minutes")
+        return snoozeMinutes
     }
 }

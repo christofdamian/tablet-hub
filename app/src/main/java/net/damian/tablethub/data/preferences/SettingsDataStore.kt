@@ -45,6 +45,9 @@ class SettingsDataStore @Inject constructor(
     private val weatherTemperatureEntityKey = stringPreferencesKey("weather_temperature_entity")
     private val weatherConditionEntityKey = stringPreferencesKey("weather_condition_entity")
 
+    // Alarm Settings
+    private val alarmSoundEnabledKey = booleanPreferencesKey("alarm_sound_enabled")
+
     // TODO: Remove hardcoded values and use settings UI
     val mqttConfig: Flow<MqttConfig> = context.dataStore.data.map { preferences ->
         MqttConfig(
@@ -82,6 +85,16 @@ class SettingsDataStore @Inject constructor(
             temperatureEntity = preferences[weatherTemperatureEntityKey] ?: "sensor.weather_temperature",
             conditionEntity = preferences[weatherConditionEntityKey] ?: "sensor.weather_condition"
         )
+    }
+
+    val alarmSoundEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[alarmSoundEnabledKey] ?: true
+    }
+
+    suspend fun setAlarmSoundEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[alarmSoundEnabledKey] = enabled
+        }
     }
 
     suspend fun updateMqttConfig(config: MqttConfig) {

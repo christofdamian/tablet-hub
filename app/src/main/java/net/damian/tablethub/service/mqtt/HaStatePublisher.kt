@@ -206,6 +206,31 @@ class HaStatePublisher @Inject constructor(
     }
 
     /**
+     * Publish snooze event for Home Assistant automations.
+     * HA can use this to pause music, dim lights, etc.
+     */
+    fun publishSnoozeEvent(alarmId: Long, snoozeMinutes: Int) {
+        scope.launch {
+            try {
+                deviceId = settingsDataStore.deviceId.first()
+                val event = SnoozeEvent(
+                    eventType = "tablethub_alarm_snoozed",
+                    alarmId = alarmId.toString(),
+                    snoozeMinutes = snoozeMinutes
+                )
+                val adapter = moshi.adapter(SnoozeEvent::class.java)
+                val json = adapter.toJson(event)
+
+                // Publish event (not retained - events are transient)
+                mqttManager.publish(eventTopic, json, qos = 1, retained = false)
+                Log.d(TAG, "Published snooze event: $json")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to publish snooze event", e)
+            }
+        }
+    }
+
+    /**
      * Force refresh all state values and publish.
      */
     fun refreshAndPublish() {
@@ -257,4 +282,15 @@ data class PreAlarmEvent(
     @com.squareup.moshi.Json(name = "alarm_time") val alarmTime: String,
     @com.squareup.moshi.Json(name = "alarm_label") val alarmLabel: String,
     @com.squareup.moshi.Json(name = "minutes_until") val minutesUntil: Int
+)
+
+/**
+ * Snooze event published to MQTT for HA automations.
+ * HA can use this to pause music, dim lights, etc.
+ */
+@com.squareup.moshi.JsonClass(generateAdapter = true)
+data class SnoozeEvent(
+    @com.squareup.moshi.Json(name = "event_type") val eventType: String,
+    @com.squareup.moshi.Json(name = "alarm_id") val alarmId: String,
+    @com.squareup.moshi.Json(name = "snooze_minutes") val snoozeMinutes: Int
 )

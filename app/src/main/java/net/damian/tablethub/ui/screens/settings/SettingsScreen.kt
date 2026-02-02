@@ -280,6 +280,16 @@ fun SettingsScreen(
                 )
             }
 
+            // Alarm Section
+            SettingsSection(title = "Alarms") {
+                SwitchSetting(
+                    label = "On-device alarm sound",
+                    checked = uiState.alarmSoundEnabled,
+                    onCheckedChange = { viewModel.updateAlarmSoundEnabled(it) },
+                    subtitle = "Disable to let Home Assistant control wake-up (music, lights)"
+                )
+            }
+
             // Save Button
             Button(
                 onClick = { viewModel.saveSettings() },

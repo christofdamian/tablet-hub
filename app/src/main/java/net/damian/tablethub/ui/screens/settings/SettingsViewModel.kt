@@ -69,6 +69,13 @@ class SettingsViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(nightModeConfig = config)
             }
         }
+
+        viewModelScope.launch {
+            // Load alarm settings
+            settingsDataStore.alarmSoundEnabled.collect { enabled ->
+                _uiState.value = _uiState.value.copy(alarmSoundEnabled = enabled)
+            }
+        }
     }
 
     fun updateMqttHost(host: String) {
@@ -154,6 +161,14 @@ class SettingsViewModel @Inject constructor(
         )
     }
 
+    fun updateAlarmSoundEnabled(enabled: Boolean) {
+        _uiState.value = _uiState.value.copy(alarmSoundEnabled = enabled)
+        // Save immediately since this is a simple toggle
+        viewModelScope.launch {
+            settingsDataStore.setAlarmSoundEnabled(enabled)
+        }
+    }
+
     fun saveSettings() {
         viewModelScope.launch {
             val state = _uiState.value
@@ -226,6 +241,7 @@ data class SettingsUiState(
     val deviceId: String = "tablethub",
     val deviceName: String = "TabletHub",
     val nightModeConfig: NightModeConfig = NightModeConfig(),
+    val alarmSoundEnabled: Boolean = true,
     val saveSuccess: Boolean = false,
     val connectionTestResult: TestResult? = null
 )
