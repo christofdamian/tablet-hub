@@ -47,6 +47,7 @@ class SettingsDataStore @Inject constructor(
 
     // Alarm Settings
     private val alarmSoundEnabledKey = booleanPreferencesKey("alarm_sound_enabled")
+    private val snoozeDurationKey = intPreferencesKey("snooze_duration_minutes")
 
     // TODO: Remove hardcoded values and use settings UI
     val mqttConfig: Flow<MqttConfig> = context.dataStore.data.map { preferences ->
@@ -91,9 +92,19 @@ class SettingsDataStore @Inject constructor(
         preferences[alarmSoundEnabledKey] ?: true
     }
 
+    val snoozeDuration: Flow<Int> = context.dataStore.data.map { preferences ->
+        preferences[snoozeDurationKey] ?: 9
+    }
+
     suspend fun setAlarmSoundEnabled(enabled: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[alarmSoundEnabledKey] = enabled
+        }
+    }
+
+    suspend fun setSnoozeDuration(minutes: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[snoozeDurationKey] = minutes
         }
     }
 

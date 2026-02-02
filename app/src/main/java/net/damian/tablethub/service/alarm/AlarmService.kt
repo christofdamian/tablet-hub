@@ -45,7 +45,7 @@ class AlarmService : Service() {
 
         const val CHANNEL_ID = "alarm_channel"
         const val NOTIFICATION_ID = 1001
-        const val SNOOZE_DURATION_MINUTES = 9
+        const val DEFAULT_SNOOZE_DURATION_MINUTES = 9
     }
 
     @Inject
@@ -284,7 +284,7 @@ class AlarmService : Service() {
     }
 
     private fun snoozeAlarm(alarmId: Long): Int {
-        val snoozeMinutes = SNOOZE_DURATION_MINUTES
+        val snoozeMinutes = runBlocking { settingsDataStore.snoozeDuration.first() }
         alarmScheduler.scheduleSnooze(alarmId, currentAlarmLabel, snoozeMinutes)
         Log.d(TAG, "Alarm $alarmId snoozed for $snoozeMinutes minutes")
         return snoozeMinutes

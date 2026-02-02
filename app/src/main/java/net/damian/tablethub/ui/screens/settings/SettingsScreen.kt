@@ -288,6 +288,16 @@ fun SettingsScreen(
                     onCheckedChange = { viewModel.updateAlarmSoundEnabled(it) },
                     subtitle = "Disable to let Home Assistant control wake-up (music, lights)"
                 )
+
+                OutlinedTextField(
+                    value = uiState.snoozeDurationMinutes.toString(),
+                    onValueChange = { viewModel.updateSnoozeDuration(it) },
+                    label = { Text("Snooze Duration (minutes)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    supportingText = { Text("How long to snooze when you tap Snooze (1-60, default: 9)") }
+                )
             }
 
             // Save Button

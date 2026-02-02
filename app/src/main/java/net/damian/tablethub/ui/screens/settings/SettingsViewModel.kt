@@ -76,6 +76,13 @@ class SettingsViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(alarmSoundEnabled = enabled)
             }
         }
+
+        viewModelScope.launch {
+            // Load snooze duration
+            settingsDataStore.snoozeDuration.collect { minutes ->
+                _uiState.value = _uiState.value.copy(snoozeDurationMinutes = minutes)
+            }
+        }
     }
 
     fun updateMqttHost(host: String) {
@@ -169,6 +176,15 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun updateSnoozeDuration(minutes: String) {
+        val minutesInt = minutes.toIntOrNull()?.coerceIn(1, 60) ?: return
+        _uiState.value = _uiState.value.copy(snoozeDurationMinutes = minutesInt)
+        // Save immediately
+        viewModelScope.launch {
+            settingsDataStore.setSnoozeDuration(minutesInt)
+        }
+    }
+
     fun saveSettings() {
         viewModelScope.launch {
             val state = _uiState.value
@@ -242,6 +258,7 @@ data class SettingsUiState(
     val deviceName: String = "TabletHub",
     val nightModeConfig: NightModeConfig = NightModeConfig(),
     val alarmSoundEnabled: Boolean = true,
+    val snoozeDurationMinutes: Int = 9,
     val saveSuccess: Boolean = false,
     val connectionTestResult: TestResult? = null
 )
