@@ -125,12 +125,11 @@ automation:
 
 Improvements to the existing night mode feature.
 
-**Settings UI:**
-- Add settings screen to configure:
-  - Lux threshold for auto-switching (default: 15)
-  - Hysteresis value (default: 5)
-  - Night brightness level (default: 5/255)
-  - Enable/disable auto mode vs manual only
+**~~Settings UI:~~** ✅ DONE
+- ~~Lux threshold for auto-switching (default: 15)~~
+- ~~Hysteresis value (default: 5)~~
+- ~~Night brightness level (default: 5/255)~~
+- ~~Enable/disable auto mode vs manual only~~
 
 **~~Brightness Restoration:~~** ✅ DONE
 - ~~Remember brightness level before entering night mode~~
@@ -205,5 +204,5 @@ suspend fun search(
 0. ~~**Weather widget**~~ ✅ DONE
 1. ~~**TTS support**~~ ✅ DONE
 2. ~~**HA-driven alarm timing**~~ ✅ DONE (sensor.tablethub_alarm_countdown)
-3. **Night mode settings UI** – configure thresholds and brightness
+3. ~~**Night mode settings UI**~~ ✅ DONE
 4. **Media player improvements** 📋 LATER – async loading, scroll bar, search
