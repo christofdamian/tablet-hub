@@ -143,10 +143,8 @@ Improvements to the existing night mode feature.
 **~~Gradual Transitions:~~** ❌ WON'T DO
 - Conflicts with instant NightClockDisplay switch which is preferred
 
-**Sensor Calibration:**
-- Different devices have different light sensor sensitivities
-- Add calibration option or per-device presets
-- "Calibrate in dark room" wizard
+**~~Sensor Calibration:~~** ✅ DONE
+- ~~Add calibration option~~ - "Use Current" button in settings
 
 **~~Time-Based Schedule:~~** ❌ WON'T DO
 - Can be handled via HA automations instead
