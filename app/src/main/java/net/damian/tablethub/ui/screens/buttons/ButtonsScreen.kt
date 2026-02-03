@@ -124,13 +124,13 @@ private fun RowScope.ActionButton(
     val containerColor = if (isConfigured) {
         MaterialTheme.colorScheme.primaryContainer
     } else {
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        MaterialTheme.colorScheme.surfaceContainerHigh
     }
 
     val contentColor = if (isConfigured) {
         MaterialTheme.colorScheme.onPrimaryContainer
     } else {
-        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+        MaterialTheme.colorScheme.onSurfaceVariant
     }
 
     Card(
@@ -178,7 +178,7 @@ private fun RowScope.ActionButton(
                 Text(
                     text = "Long press\nto configure",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                    color = MaterialTheme.colorScheme.outline,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = 4.dp)
                 )

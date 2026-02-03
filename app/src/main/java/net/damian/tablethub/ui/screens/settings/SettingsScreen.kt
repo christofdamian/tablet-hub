@@ -1,5 +1,6 @@
 package net.damian.tablethub.ui.screens.settings
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,33 +15,36 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Save
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
@@ -48,7 +52,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import net.damian.tablethub.service.mqtt.MqttConnectionState
-import net.damian.tablethub.ui.theme.Dimensions
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,12 +65,8 @@ fun SettingsScreen(
     val currentLux by viewModel.currentLux.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(uiState.saveSuccess) {
-        if (uiState.saveSuccess) {
-            snackbarHostState.showSnackbar("Settings saved")
-            viewModel.clearSaveSuccess()
-        }
-    }
+    var showMqttDialog by remember { mutableStateOf(false) }
+    var showDeviceDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.connectionTestResult) {
         when (val result = uiState.connectionTestResult) {
@@ -89,26 +88,10 @@ fun SettingsScreen(
             TopAppBar(
                 title = { Text("Settings") },
                 navigationIcon = {
-                    IconButton(
-                        onClick = onDismiss,
-                        modifier = Modifier.size(Dimensions.IconButtonSize)
-                    ) {
+                    IconButton(onClick = onDismiss) {
                         Icon(
-                            Icons.Default.Close,
-                            contentDescription = "Close",
-                            modifier = Modifier.size(Dimensions.IconSizeDefault)
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(
-                        onClick = { viewModel.saveSettings() },
-                        modifier = Modifier.size(Dimensions.IconButtonSize)
-                    ) {
-                        Icon(
-                            Icons.Default.Save,
-                            contentDescription = "Save",
-                            modifier = Modifier.size(Dimensions.IconSizeDefault)
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
                         )
                     }
                 }
@@ -120,377 +103,304 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 16.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .verticalScroll(rememberScrollState())
         ) {
             // Connection Section
-            SettingsSection(title = "Connection") {
-                MqttConnectionStatus(
-                    state = mqttConnectionState,
-                    onReconnect = { viewModel.reconnectMqtt() }
-                )
+            SettingsSectionHeader("Connection")
 
-                Spacer(modifier = Modifier.height(8.dp))
+            MqttConnectionStatusItem(
+                state = mqttConnectionState,
+                onReconnect = { viewModel.reconnectMqtt() }
+            )
 
-                SwitchSetting(
-                    label = "MQTT Enabled",
-                    checked = uiState.mqttConfig.enabled,
-                    onCheckedChange = { viewModel.updateMqttEnabled(it) }
-                )
+            SettingsSwitchItem(
+                title = "MQTT enabled",
+                subtitle = if (uiState.mqttConfig.enabled) "Connected to Home Assistant" else "Disabled",
+                checked = uiState.mqttConfig.enabled,
+                onCheckedChange = { viewModel.updateMqttEnabled(it) }
+            )
 
-                OutlinedTextField(
-                    value = uiState.mqttConfig.host,
-                    onValueChange = { viewModel.updateMqttHost(it) },
-                    label = { Text("MQTT Host") },
-                    placeholder = { Text("homeassistant.local") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
+            SettingsClickableItem(
+                title = "MQTT server",
+                subtitle = "${uiState.mqttConfig.host}:${uiState.mqttConfig.port}",
+                onClick = { showMqttDialog = true }
+            )
 
-                OutlinedTextField(
-                    value = uiState.mqttConfig.port.toString(),
-                    onValueChange = { viewModel.updateMqttPort(it) },
-                    label = { Text("MQTT Port") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                )
-
-                OutlinedTextField(
-                    value = uiState.mqttConfig.username,
-                    onValueChange = { viewModel.updateMqttUsername(it) },
-                    label = { Text("Username") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-
-                OutlinedTextField(
-                    value = uiState.mqttConfig.password,
-                    onValueChange = { viewModel.updateMqttPassword(it) },
-                    label = { Text("Password") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    visualTransformation = PasswordVisualTransformation()
-                )
-
-                SwitchSetting(
-                    label = "Use TLS",
-                    checked = uiState.mqttConfig.useTls,
-                    onCheckedChange = { viewModel.updateMqttUseTls(it) }
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Button(
-                        onClick = { viewModel.testMqttConnection() },
-                        modifier = Modifier.weight(1f),
-                        enabled = uiState.connectionTestResult !is TestResult.Testing
-                    ) {
-                        if (uiState.connectionTestResult is TestResult.Testing) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                strokeWidth = 2.dp
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                        }
-                        Text("Test Connection")
-                    }
-                }
-            }
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
             // Device Section
-            SettingsSection(title = "Device") {
-                OutlinedTextField(
-                    value = uiState.deviceId,
-                    onValueChange = { viewModel.updateDeviceId(it) },
-                    label = { Text("Device ID") },
-                    placeholder = { Text("tablethub") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    supportingText = { Text("Used in MQTT topics and HA entity IDs") }
-                )
+            SettingsSectionHeader("Device")
 
-                OutlinedTextField(
-                    value = uiState.deviceName,
-                    onValueChange = { viewModel.updateDeviceName(it) },
-                    label = { Text("Device Name") },
-                    placeholder = { Text("TabletHub") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    supportingText = { Text("Displayed in Home Assistant") }
-                )
-            }
+            SettingsClickableItem(
+                title = "Device identity",
+                subtitle = "${uiState.deviceName} (${uiState.deviceId})",
+                onClick = { showDeviceDialog = true }
+            )
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
             // Night Mode Section
-            SettingsSection(title = "Night Mode") {
-                SwitchSetting(
-                    label = "Auto Night Mode",
-                    checked = uiState.nightModeConfig.autoEnabled,
-                    onCheckedChange = { viewModel.updateNightModeAutoEnabled(it) },
-                    subtitle = "Automatically enable based on ambient light"
-                )
+            SettingsSectionHeader("Night mode")
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Lux Threshold: ${uiState.nightModeConfig.luxThreshold}",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Text(
-                        text = "Current: ${currentLux.toInt()} lux",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Slider(
-                    value = uiState.nightModeConfig.luxThreshold.toFloat(),
-                    onValueChange = { viewModel.updateNightModeLuxThreshold(it.toInt()) },
-                    valueRange = 1f..500f,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Enter night mode when light falls below this",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1f)
-                    )
-                    OutlinedButton(
-                        onClick = { viewModel.calibrateLuxThreshold() }
-                    ) {
-                        Text("Use Current")
-                    }
-                }
+            SettingsSwitchItem(
+                title = "Auto night mode",
+                subtitle = "Enable based on ambient light",
+                checked = uiState.nightModeConfig.autoEnabled,
+                onCheckedChange = { viewModel.updateNightModeAutoEnabled(it) }
+            )
 
-                Spacer(modifier = Modifier.height(16.dp))
+            SettingsSliderItem(
+                title = "Lux threshold",
+                value = uiState.nightModeConfig.luxThreshold,
+                valueRange = 1..500,
+                subtitle = "Current: ${currentLux.toInt()} lux",
+                onValueChange = { viewModel.updateNightModeLuxThreshold(it) },
+                onCalibrate = { viewModel.calibrateLuxThreshold() }
+            )
 
-                Text(
-                    text = "Lux Hysteresis: ${uiState.nightModeConfig.luxHysteresis}",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Slider(
-                    value = uiState.nightModeConfig.luxHysteresis.toFloat(),
-                    onValueChange = { viewModel.updateNightModeLuxHysteresis(it.toInt()) },
-                    valueRange = 1f..50f,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Text(
-                    text = "Exit night mode when light rises above threshold + hysteresis",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            SettingsSliderItem(
+                title = "Lux hysteresis",
+                value = uiState.nightModeConfig.luxHysteresis,
+                valueRange = 1..50,
+                subtitle = "Exit threshold: ${uiState.nightModeConfig.luxThreshold + uiState.nightModeConfig.luxHysteresis} lux",
+                onValueChange = { viewModel.updateNightModeLuxHysteresis(it) }
+            )
 
-                Spacer(modifier = Modifier.height(16.dp))
+            SettingsSliderItem(
+                title = "Night brightness",
+                value = uiState.nightModeConfig.nightBrightness,
+                valueRange = 1..255,
+                onValueChange = { viewModel.updateNightModeBrightness(it) }
+            )
 
-                Text(
-                    text = "Night Brightness: ${uiState.nightModeConfig.nightBrightness}",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Slider(
-                    value = uiState.nightModeConfig.nightBrightness.toFloat(),
-                    onValueChange = { viewModel.updateNightModeBrightness(it.toInt()) },
-                    valueRange = 1f..255f,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Text(
-                    text = "Screen brightness in night mode (1-255)",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            SettingsSliderItem(
+                title = "Extra dim overlay",
+                value = uiState.nightModeConfig.dimOverlay,
+                valueRange = 0..90,
+                valueSuffix = "%",
+                subtitle = "Dims beyond minimum brightness",
+                onValueChange = { viewModel.updateNightModeDimOverlay(it) }
+            )
 
-                Spacer(modifier = Modifier.height(16.dp))
+            SettingsSliderItem(
+                title = "Wake duration",
+                value = uiState.nightModeConfig.wakeDurationSeconds,
+                valueRange = 5..300,
+                valueSuffix = "s",
+                subtitle = "Stay awake after tapping night clock",
+                onValueChange = { viewModel.updateNightModeWakeDuration(it) }
+            )
 
-                Text(
-                    text = "Extra Dim Overlay: ${uiState.nightModeConfig.dimOverlay}%",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Slider(
-                    value = uiState.nightModeConfig.dimOverlay.toFloat(),
-                    onValueChange = { viewModel.updateNightModeDimOverlay(it.toInt()) },
-                    valueRange = 0f..90f,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Text(
-                    text = "Dims the screen beyond minimum brightness using a dark overlay",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-                Spacer(modifier = Modifier.height(16.dp))
+            // Alarms Section
+            SettingsSectionHeader("Alarms")
 
-                Text(
-                    text = "Wake Duration: ${uiState.nightModeConfig.wakeDurationSeconds} seconds",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Slider(
-                    value = uiState.nightModeConfig.wakeDurationSeconds.toFloat(),
-                    onValueChange = { viewModel.updateNightModeWakeDuration(it.toInt()) },
-                    valueRange = 5f..300f,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Text(
-                    text = "How long to stay awake after tapping the night clock",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            SettingsSwitchItem(
+                title = "On-device alarm sound",
+                subtitle = "Disable to let Home Assistant control wake-up",
+                checked = uiState.alarmSoundEnabled,
+                onCheckedChange = { viewModel.updateAlarmSoundEnabled(it) }
+            )
 
-            // Alarm Section
-            SettingsSection(title = "Alarms") {
-                SwitchSetting(
-                    label = "On-device alarm sound",
-                    checked = uiState.alarmSoundEnabled,
-                    onCheckedChange = { viewModel.updateAlarmSoundEnabled(it) },
-                    subtitle = "Disable to let Home Assistant control wake-up (music, lights)"
-                )
-
-                Text(
-                    text = "Snooze Duration: ${uiState.snoozeDurationMinutes} minutes",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Slider(
-                    value = uiState.snoozeDurationMinutes.toFloat(),
-                    onValueChange = { viewModel.updateSnoozeDuration(it.toInt()) },
-                    valueRange = 1f..30f,
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Text(
-                    text = "How long to snooze when you tap Snooze",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            // Save Button
-            Button(
-                onClick = { viewModel.saveSettings() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 16.dp)
-            ) {
-                Icon(Icons.Default.Save, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Save Settings")
-            }
+            SettingsSliderItem(
+                title = "Snooze duration",
+                value = uiState.snoozeDurationMinutes,
+                valueRange = 1..30,
+                valueSuffix = " min",
+                onValueChange = { viewModel.updateSnoozeDuration(it) }
+            )
 
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
+
+    // MQTT Configuration Dialog
+    if (showMqttDialog) {
+        MqttConfigDialog(
+            config = uiState.mqttConfig,
+            onDismiss = { showMqttDialog = false },
+            onHostChange = viewModel::updateMqttHost,
+            onPortChange = viewModel::updateMqttPort,
+            onUsernameChange = viewModel::updateMqttUsername,
+            onPasswordChange = viewModel::updateMqttPassword,
+            onUseTlsChange = viewModel::updateMqttUseTls,
+            onTestConnection = viewModel::testMqttConnection,
+            testResult = uiState.connectionTestResult
+        )
+    }
+
+    // Device Identity Dialog
+    if (showDeviceDialog) {
+        DeviceIdentityDialog(
+            deviceId = uiState.deviceId,
+            deviceName = uiState.deviceName,
+            onDismiss = { showDeviceDialog = false },
+            onDeviceIdChange = viewModel::updateDeviceId,
+            onDeviceNameChange = viewModel::updateDeviceName
+        )
+    }
 }
 
 @Composable
-private fun SettingsSection(
+private fun SettingsSectionHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+    )
+}
+
+@Composable
+private fun SettingsSwitchItem(
     title: String,
-    content: @Composable () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
-            HorizontalDivider()
-            content()
-        }
-    }
-}
-
-@Composable
-private fun SwitchSetting(
-    label: String,
+    subtitle: String?,
     checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    subtitle: String? = null
+    onCheckedChange: (Boolean) -> Unit
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = label, style = MaterialTheme.typography.bodyLarge)
-            if (subtitle != null) {
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange
-        )
-    }
+    ListItem(
+        headlineContent = { Text(title) },
+        supportingContent = subtitle?.let { { Text(it) } },
+        trailingContent = {
+            Switch(
+                checked = checked,
+                onCheckedChange = onCheckedChange
+            )
+        },
+        modifier = Modifier.clickable { onCheckedChange(!checked) }
+    )
 }
 
 @Composable
-private fun MqttConnectionStatus(
-    state: MqttConnectionState,
-    onReconnect: () -> Unit
+private fun SettingsClickableItem(
+    title: String,
+    subtitle: String?,
+    onClick: () -> Unit
 ) {
-    val (statusText, statusColor, icon) = when (state) {
-        is MqttConnectionState.Connected -> Triple(
-            "Connected",
-            MaterialTheme.colorScheme.primary,
-            Icons.Default.CheckCircle
-        )
-        is MqttConnectionState.Connecting -> Triple(
-            "Connecting...",
-            MaterialTheme.colorScheme.tertiary,
-            null
-        )
-        is MqttConnectionState.Disconnected -> Triple(
-            "Disconnected",
-            MaterialTheme.colorScheme.outline,
-            null
-        )
-        is MqttConnectionState.Reconnecting -> Triple(
-            "Reconnecting (${state.attempt}/${state.maxAttempts})...",
-            MaterialTheme.colorScheme.tertiary,
-            null
-        )
-        is MqttConnectionState.WaitingForNetwork -> Triple(
-            "Waiting for network...",
-            MaterialTheme.colorScheme.outline,
-            null
-        )
-        is MqttConnectionState.Error -> Triple(
-            state.message,
-            MaterialTheme.colorScheme.error,
-            Icons.Default.Error
-        )
-    }
+    ListItem(
+        headlineContent = { Text(title) },
+        supportingContent = subtitle?.let { { Text(it) } },
+        modifier = Modifier.clickable(onClick = onClick)
+    )
+}
 
-    Column(modifier = Modifier.fillMaxWidth()) {
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SettingsSliderItem(
+    title: String,
+    value: Int,
+    valueRange: IntRange,
+    valueSuffix: String = "",
+    subtitle: String? = null,
+    onValueChange: (Int) -> Unit,
+    onCalibrate: (() -> Unit)? = null
+) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge
+            )
+            Text(
+                text = "$value$valueSuffix",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        Slider(
+            value = value.toFloat(),
+            onValueChange = { onValueChange(it.toInt()) },
+            valueRange = valueRange.first.toFloat()..valueRange.last.toFloat(),
+            modifier = Modifier.fillMaxWidth(),
+            track = { sliderState ->
+                SliderDefaults.Track(
+                    sliderState = sliderState,
+                    modifier = Modifier.height(24.dp),
+                    thumbTrackGapSize = 4.dp
+                )
+            }
+        )
+
+        if (subtitle != null || onCalibrate != null) {
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Status:", style = MaterialTheme.typography.bodyMedium)
+                if (subtitle != null) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f)
+                    )
+                } else {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+                if (onCalibrate != null) {
+                    OutlinedButton(onClick = onCalibrate) {
+                        Text("Use current")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MqttConnectionStatusItem(
+    state: MqttConnectionState,
+    onReconnect: () -> Unit
+) {
+    val (statusText, statusColor, icon, showReconnect) = when (state) {
+        is MqttConnectionState.Connected -> Quadruple(
+            "Connected",
+            MaterialTheme.colorScheme.primary,
+            Icons.Default.CheckCircle,
+            false
+        )
+        is MqttConnectionState.Connecting -> Quadruple(
+            "Connecting...",
+            MaterialTheme.colorScheme.tertiary,
+            null,
+            false
+        )
+        is MqttConnectionState.Disconnected -> Quadruple(
+            "Disconnected",
+            MaterialTheme.colorScheme.outline,
+            null,
+            true
+        )
+        is MqttConnectionState.Reconnecting -> Quadruple(
+            "Reconnecting (${state.attempt}/${state.maxAttempts})...",
+            MaterialTheme.colorScheme.tertiary,
+            null,
+            false
+        )
+        is MqttConnectionState.WaitingForNetwork -> Quadruple(
+            "Waiting for network...",
+            MaterialTheme.colorScheme.outline,
+            null,
+            false
+        )
+        is MqttConnectionState.Error -> Quadruple(
+            state.message,
+            MaterialTheme.colorScheme.error,
+            Icons.Default.Error,
+            true
+        )
+    }
+
+    ListItem(
+        headlineContent = { Text("Connection status") },
+        supportingContent = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 if (icon != null) {
                     Icon(
                         imageVector = icon,
@@ -498,33 +408,150 @@ private fun MqttConnectionStatus(
                         tint = statusColor,
                         modifier = Modifier.size(16.dp)
                     )
+                    Spacer(modifier = Modifier.width(4.dp))
                 } else if (state is MqttConnectionState.Connecting ||
                     state is MqttConnectionState.Reconnecting) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(16.dp),
                         strokeWidth = 2.dp
                     )
+                    Spacer(modifier = Modifier.width(4.dp))
+                }
+                Text(statusText, color = statusColor)
+            }
+        },
+        trailingContent = if (showReconnect) {
+            {
+                IconButton(onClick = onReconnect) {
+                    Icon(Icons.Default.Refresh, contentDescription = "Reconnect")
                 }
             }
-            Text(
-                text = statusText,
-                style = MaterialTheme.typography.bodyMedium,
-                color = statusColor
-            )
-        }
+        } else null
+    )
+}
 
-        // Show reconnect button when not connected
-        if (state is MqttConnectionState.Error ||
-            state is MqttConnectionState.Disconnected) {
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedButton(
-                onClick = onReconnect,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(Icons.Default.Refresh, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Reconnect Now")
+@Composable
+private fun MqttConfigDialog(
+    config: net.damian.tablethub.data.preferences.MqttConfig,
+    onDismiss: () -> Unit,
+    onHostChange: (String) -> Unit,
+    onPortChange: (String) -> Unit,
+    onUsernameChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit,
+    onUseTlsChange: (Boolean) -> Unit,
+    onTestConnection: () -> Unit,
+    testResult: TestResult?
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("MQTT Server") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = config.host,
+                    onValueChange = onHostChange,
+                    label = { Text("Host") },
+                    placeholder = { Text("homeassistant.local") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = config.port.toString(),
+                    onValueChange = onPortChange,
+                    label = { Text("Port") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+                OutlinedTextField(
+                    value = config.username,
+                    onValueChange = onUsernameChange,
+                    label = { Text("Username") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = config.password,
+                    onValueChange = onPasswordChange,
+                    label = { Text("Password") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation()
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Use TLS")
+                    Switch(
+                        checked = config.useTls,
+                        onCheckedChange = onUseTlsChange
+                    )
+                }
+                OutlinedButton(
+                    onClick = onTestConnection,
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = testResult !is TestResult.Testing
+                ) {
+                    if (testResult is TestResult.Testing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                    Text("Test connection")
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Done")
             }
         }
-    }
+    )
 }
+
+@Composable
+private fun DeviceIdentityDialog(
+    deviceId: String,
+    deviceName: String,
+    onDismiss: () -> Unit,
+    onDeviceIdChange: (String) -> Unit,
+    onDeviceNameChange: (String) -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Device Identity") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = deviceId,
+                    onValueChange = onDeviceIdChange,
+                    label = { Text("Device ID") },
+                    placeholder = { Text("tablethub") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    supportingText = { Text("Used in MQTT topics and HA entity IDs") }
+                )
+                OutlinedTextField(
+                    value = deviceName,
+                    onValueChange = onDeviceNameChange,
+                    label = { Text("Device name") },
+                    placeholder = { Text("TabletHub") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    supportingText = { Text("Displayed in Home Assistant") }
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Done")
+            }
+        }
+    )
+}
+
+private data class Quadruple<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)

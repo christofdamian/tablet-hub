@@ -47,14 +47,12 @@ class SettingsViewModel @Inject constructor(
 
     private fun loadSettings() {
         viewModelScope.launch {
-            // Load MQTT config
             settingsDataStore.mqttConfig.collect { config ->
                 _uiState.value = _uiState.value.copy(mqttConfig = config)
             }
         }
 
         viewModelScope.launch {
-            // Load device info
             val deviceId = settingsDataStore.deviceId.first()
             val deviceName = settingsDataStore.deviceName.first()
             _uiState.value = _uiState.value.copy(
@@ -64,31 +62,31 @@ class SettingsViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            // Load night mode config
             settingsDataStore.nightModeConfig.collect { config ->
                 _uiState.value = _uiState.value.copy(nightModeConfig = config)
             }
         }
 
         viewModelScope.launch {
-            // Load alarm settings
             settingsDataStore.alarmSoundEnabled.collect { enabled ->
                 _uiState.value = _uiState.value.copy(alarmSoundEnabled = enabled)
             }
         }
 
         viewModelScope.launch {
-            // Load snooze duration
             settingsDataStore.snoozeDuration.collect { minutes ->
                 _uiState.value = _uiState.value.copy(snoozeDurationMinutes = minutes)
             }
         }
     }
 
+    // MQTT Settings - auto-save on change
+
     fun updateMqttHost(host: String) {
         _uiState.value = _uiState.value.copy(
             mqttConfig = _uiState.value.mqttConfig.copy(host = host)
         )
+        saveMqttConfig()
     }
 
     fun updateMqttPort(port: String) {
@@ -96,44 +94,72 @@ class SettingsViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(
             mqttConfig = _uiState.value.mqttConfig.copy(port = portInt)
         )
+        saveMqttConfig()
     }
 
     fun updateMqttUsername(username: String) {
         _uiState.value = _uiState.value.copy(
             mqttConfig = _uiState.value.mqttConfig.copy(username = username)
         )
+        saveMqttConfig()
     }
 
     fun updateMqttPassword(password: String) {
         _uiState.value = _uiState.value.copy(
             mqttConfig = _uiState.value.mqttConfig.copy(password = password)
         )
+        saveMqttConfig()
     }
 
     fun updateMqttUseTls(useTls: Boolean) {
         _uiState.value = _uiState.value.copy(
             mqttConfig = _uiState.value.mqttConfig.copy(useTls = useTls)
         )
+        saveMqttConfig()
     }
 
     fun updateMqttEnabled(enabled: Boolean) {
         _uiState.value = _uiState.value.copy(
             mqttConfig = _uiState.value.mqttConfig.copy(enabled = enabled)
         )
+        saveMqttConfig()
+        // Reconnect if enabling
+        if (enabled && _uiState.value.mqttConfig.isValid) {
+            mqttManager.connect(_uiState.value.mqttConfig)
+        }
     }
+
+    private fun saveMqttConfig() {
+        viewModelScope.launch {
+            settingsDataStore.updateMqttConfig(_uiState.value.mqttConfig)
+        }
+    }
+
+    // Device Settings - auto-save on change
 
     fun updateDeviceId(deviceId: String) {
         _uiState.value = _uiState.value.copy(deviceId = deviceId)
+        saveDeviceInfo()
     }
 
     fun updateDeviceName(deviceName: String) {
         _uiState.value = _uiState.value.copy(deviceName = deviceName)
+        saveDeviceInfo()
     }
+
+    private fun saveDeviceInfo() {
+        viewModelScope.launch {
+            settingsDataStore.updateDeviceInfo(_uiState.value.deviceId, _uiState.value.deviceName)
+        }
+    }
+
+    // Night Mode Settings - auto-save on change
 
     fun updateNightModeAutoEnabled(enabled: Boolean) {
         _uiState.value = _uiState.value.copy(
             nightModeConfig = _uiState.value.nightModeConfig.copy(autoEnabled = enabled)
         )
+        saveNightModeConfig()
     }
 
     fun updateNightModeLuxThreshold(threshold: Int) {
@@ -141,6 +167,7 @@ class SettingsViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(
             nightModeConfig = _uiState.value.nightModeConfig.copy(luxThreshold = thresholdInt)
         )
+        saveNightModeConfig()
     }
 
     fun updateNightModeLuxHysteresis(hysteresis: Int) {
@@ -148,6 +175,7 @@ class SettingsViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(
             nightModeConfig = _uiState.value.nightModeConfig.copy(luxHysteresis = hysteresisInt)
         )
+        saveNightModeConfig()
     }
 
     fun updateNightModeBrightness(brightness: Int) {
@@ -155,6 +183,7 @@ class SettingsViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(
             nightModeConfig = _uiState.value.nightModeConfig.copy(nightBrightness = brightnessInt)
         )
+        saveNightModeConfig()
     }
 
     fun updateNightModeDimOverlay(dimOverlay: Int) {
@@ -162,6 +191,7 @@ class SettingsViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(
             nightModeConfig = _uiState.value.nightModeConfig.copy(dimOverlay = dimOverlayInt)
         )
+        saveNightModeConfig()
     }
 
     fun updateNightModeWakeDuration(seconds: Int) {
@@ -169,61 +199,41 @@ class SettingsViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(
             nightModeConfig = _uiState.value.nightModeConfig.copy(wakeDurationSeconds = secondsInt)
         )
+        saveNightModeConfig()
     }
 
-    /**
-     * Calibrate the lux threshold using the current ambient light reading.
-     * Sets the threshold to the current lux value.
-     */
     fun calibrateLuxThreshold() {
         val currentLuxValue = nightModeManager.nightModeState.value.currentLux.toInt()
         _uiState.value = _uiState.value.copy(
             nightModeConfig = _uiState.value.nightModeConfig.copy(luxThreshold = currentLuxValue)
         )
+        saveNightModeConfig()
     }
+
+    private fun saveNightModeConfig() {
+        viewModelScope.launch {
+            settingsDataStore.updateNightModeConfig(_uiState.value.nightModeConfig)
+        }
+    }
+
+    // Alarm Settings - auto-save on change
 
     fun updateAlarmSoundEnabled(enabled: Boolean) {
         _uiState.value = _uiState.value.copy(alarmSoundEnabled = enabled)
-        // Save immediately since this is a simple toggle
         viewModelScope.launch {
             settingsDataStore.setAlarmSoundEnabled(enabled)
         }
     }
 
     fun updateSnoozeDuration(minutes: Int) {
-        val minutesInt = minutes.coerceIn(1, 60)
+        val minutesInt = minutes.coerceIn(1, 30)
         _uiState.value = _uiState.value.copy(snoozeDurationMinutes = minutesInt)
-        // Save immediately
         viewModelScope.launch {
             settingsDataStore.setSnoozeDuration(minutesInt)
         }
     }
 
-    fun saveSettings() {
-        viewModelScope.launch {
-            val state = _uiState.value
-
-            // Save MQTT config
-            settingsDataStore.updateMqttConfig(state.mqttConfig)
-
-            // Save device info
-            settingsDataStore.updateDeviceInfo(state.deviceId, state.deviceName)
-
-            // Save night mode config
-            settingsDataStore.updateNightModeConfig(state.nightModeConfig)
-
-            // Reconnect MQTT if enabled
-            if (state.mqttConfig.enabled && state.mqttConfig.isValid) {
-                mqttManager.connect(state.mqttConfig)
-            }
-
-            _uiState.value = _uiState.value.copy(saveSuccess = true)
-        }
-    }
-
-    fun clearSaveSuccess() {
-        _uiState.value = _uiState.value.copy(saveSuccess = false)
-    }
+    // Connection testing
 
     fun testMqttConnection() {
         viewModelScope.launch {
@@ -239,6 +249,9 @@ class SettingsViewModel @Inject constructor(
                 connectionTestResult = TestResult.Testing
             )
 
+            // Save config before testing
+            settingsDataStore.updateMqttConfig(config)
+
             val result = mqttManager.testConnection(config)
             _uiState.value = _uiState.value.copy(
                 connectionTestResult = when (result) {
@@ -246,6 +259,11 @@ class SettingsViewModel @Inject constructor(
                     is ConnectionTestResult.Failure -> TestResult.Failure(result.message)
                 }
             )
+
+            // If test succeeded and MQTT is enabled, reconnect
+            if (result is ConnectionTestResult.Success && config.enabled) {
+                mqttManager.connect(config)
+            }
         }
     }
 
@@ -273,7 +291,6 @@ data class SettingsUiState(
     val nightModeConfig: NightModeConfig = NightModeConfig(),
     val alarmSoundEnabled: Boolean = true,
     val snoozeDurationMinutes: Int = 9,
-    val saveSuccess: Boolean = false,
     val connectionTestResult: TestResult? = null
 )
 
