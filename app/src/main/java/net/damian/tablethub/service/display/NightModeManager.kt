@@ -54,7 +54,8 @@ class NightModeManager @Inject constructor(
                             isAutoEnabled = config.autoEnabled,
                             luxThreshold = config.luxThreshold.toFloat(),
                             luxHysteresis = config.luxHysteresis.toFloat(),
-                            nightBrightness = config.nightBrightness
+                            nightBrightness = config.nightBrightness,
+                            dimOverlay = config.dimOverlay
                         )
                     } else {
                         // Subsequent updates: only update config values, not manual state
@@ -63,7 +64,8 @@ class NightModeManager @Inject constructor(
                             isAutoEnabled = config.autoEnabled,
                             luxThreshold = config.luxThreshold.toFloat(),
                             luxHysteresis = config.luxHysteresis.toFloat(),
-                            nightBrightness = config.nightBrightness
+                            nightBrightness = config.nightBrightness,
+                            dimOverlay = config.dimOverlay
                         )
                     }
                 }
@@ -194,5 +196,6 @@ data class NightModeState(
     val luxThreshold: Float = 15f,
     val luxHysteresis: Float = 5f,
     val nightBrightness: Int = 5,
+    val dimOverlay: Int = 0,  // Extra dim overlay percentage (0-90)
     val preNightBrightness: Int? = null  // Brightness level before entering night mode
 )

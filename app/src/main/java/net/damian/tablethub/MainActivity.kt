@@ -64,7 +64,8 @@ class MainActivity : ComponentActivity() {
                 } else if (nightModeState.isActive) {
                     // Show minimal night clock display
                     NightClockDisplay(
-                        onTap = { nightModeManager.toggleNightMode() }
+                        onTap = { nightModeManager.toggleNightMode() },
+                        dimOverlay = nightModeState.dimOverlay
                     )
                 } else {
                     // Show normal UI

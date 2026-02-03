@@ -30,6 +30,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
@@ -232,25 +233,37 @@ fun SettingsScreen(
                     subtitle = "Automatically enable based on ambient light"
                 )
 
-                OutlinedTextField(
-                    value = uiState.nightModeConfig.luxThreshold.toString(),
-                    onValueChange = { viewModel.updateNightModeLuxThreshold(it) },
-                    label = { Text("Lux Threshold") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    supportingText = { Text("Enter night mode when light falls below this (default: 15)") }
-                )
-
-                // Calibration row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Current light: ${currentLux.toInt()} lux",
+                        text = "Lux Threshold: ${uiState.nightModeConfig.luxThreshold}",
                         style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        text = "Current: ${currentLux.toInt()} lux",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Slider(
+                    value = uiState.nightModeConfig.luxThreshold.toFloat(),
+                    onValueChange = { viewModel.updateNightModeLuxThreshold(it.toInt()) },
+                    valueRange = 1f..500f,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Enter night mode when light falls below this",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f)
                     )
                     OutlinedButton(
                         onClick = { viewModel.calibrateLuxThreshold() }
@@ -259,24 +272,58 @@ fun SettingsScreen(
                     }
                 }
 
-                OutlinedTextField(
-                    value = uiState.nightModeConfig.luxHysteresis.toString(),
-                    onValueChange = { viewModel.updateNightModeLuxHysteresis(it) },
-                    label = { Text("Lux Hysteresis") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    supportingText = { Text("Exit night mode when light rises above threshold + hysteresis (default: 5)") }
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Lux Hysteresis: ${uiState.nightModeConfig.luxHysteresis}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Slider(
+                    value = uiState.nightModeConfig.luxHysteresis.toFloat(),
+                    onValueChange = { viewModel.updateNightModeLuxHysteresis(it.toInt()) },
+                    valueRange = 1f..50f,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text(
+                    text = "Exit night mode when light rises above threshold + hysteresis",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                OutlinedTextField(
-                    value = uiState.nightModeConfig.nightBrightness.toString(),
-                    onValueChange = { viewModel.updateNightModeBrightness(it) },
-                    label = { Text("Night Brightness") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    supportingText = { Text("Screen brightness in night mode (1-255, default: 5)") }
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Night Brightness: ${uiState.nightModeConfig.nightBrightness}",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Slider(
+                    value = uiState.nightModeConfig.nightBrightness.toFloat(),
+                    onValueChange = { viewModel.updateNightModeBrightness(it.toInt()) },
+                    valueRange = 1f..255f,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text(
+                    text = "Screen brightness in night mode (1-255)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Extra Dim Overlay: ${uiState.nightModeConfig.dimOverlay}%",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Slider(
+                    value = uiState.nightModeConfig.dimOverlay.toFloat(),
+                    onValueChange = { viewModel.updateNightModeDimOverlay(it.toInt()) },
+                    valueRange = 0f..90f,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text(
+                    text = "Dims the screen beyond minimum brightness using a dark overlay",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -289,14 +336,20 @@ fun SettingsScreen(
                     subtitle = "Disable to let Home Assistant control wake-up (music, lights)"
                 )
 
-                OutlinedTextField(
-                    value = uiState.snoozeDurationMinutes.toString(),
-                    onValueChange = { viewModel.updateSnoozeDuration(it) },
-                    label = { Text("Snooze Duration (minutes)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    supportingText = { Text("How long to snooze when you tap Snooze (1-60, default: 9)") }
+                Text(
+                    text = "Snooze Duration: ${uiState.snoozeDurationMinutes} minutes",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Slider(
+                    value = uiState.snoozeDurationMinutes.toFloat(),
+                    onValueChange = { viewModel.updateSnoozeDuration(it.toInt()) },
+                    valueRange = 1f..30f,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text(
+                    text = "How long to snooze when you tap Snooze",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 

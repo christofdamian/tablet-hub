@@ -14,6 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
@@ -26,11 +27,16 @@ import java.time.format.DateTimeFormatter
  * Minimal night mode clock display.
  * Shows only the time in red on a pure black background.
  * Tap anywhere to exit night mode.
+ *
+ * @param dimOverlay Extra dimming percentage (0-90). Draws a semi-transparent
+ *                   black overlay on top of everything to make the screen appear
+ *                   darker than the hardware minimum brightness allows.
  */
 @Composable
 fun NightClockDisplay(
     onTap: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    dimOverlay: Int = 0
 ) {
     var currentTimeMillis by remember { mutableLongStateOf(System.currentTimeMillis()) }
 
@@ -64,5 +70,14 @@ fun NightClockDisplay(
             color = NightRed,
             letterSpacing = (-4).sp
         )
+
+        // Extra dim overlay - draws semi-transparent black on top of everything
+        if (dimOverlay > 0) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = dimOverlay / 100f))
+            )
+        }
     }
 }

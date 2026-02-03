@@ -136,24 +136,31 @@ class SettingsViewModel @Inject constructor(
         )
     }
 
-    fun updateNightModeLuxThreshold(threshold: String) {
-        val thresholdInt = threshold.toIntOrNull() ?: return
+    fun updateNightModeLuxThreshold(threshold: Int) {
+        val thresholdInt = threshold.coerceIn(1, 500)
         _uiState.value = _uiState.value.copy(
             nightModeConfig = _uiState.value.nightModeConfig.copy(luxThreshold = thresholdInt)
         )
     }
 
-    fun updateNightModeLuxHysteresis(hysteresis: String) {
-        val hysteresisInt = hysteresis.toIntOrNull() ?: return
+    fun updateNightModeLuxHysteresis(hysteresis: Int) {
+        val hysteresisInt = hysteresis.coerceIn(1, 50)
         _uiState.value = _uiState.value.copy(
             nightModeConfig = _uiState.value.nightModeConfig.copy(luxHysteresis = hysteresisInt)
         )
     }
 
-    fun updateNightModeBrightness(brightness: String) {
-        val brightnessInt = brightness.toIntOrNull()?.coerceIn(1, 255) ?: return
+    fun updateNightModeBrightness(brightness: Int) {
+        val brightnessInt = brightness.coerceIn(1, 255)
         _uiState.value = _uiState.value.copy(
             nightModeConfig = _uiState.value.nightModeConfig.copy(nightBrightness = brightnessInt)
+        )
+    }
+
+    fun updateNightModeDimOverlay(dimOverlay: Int) {
+        val dimOverlayInt = dimOverlay.coerceIn(0, 90)
+        _uiState.value = _uiState.value.copy(
+            nightModeConfig = _uiState.value.nightModeConfig.copy(dimOverlay = dimOverlayInt)
         )
     }
 
@@ -176,8 +183,8 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun updateSnoozeDuration(minutes: String) {
-        val minutesInt = minutes.toIntOrNull()?.coerceIn(1, 60) ?: return
+    fun updateSnoozeDuration(minutes: Int) {
+        val minutesInt = minutes.coerceIn(1, 60)
         _uiState.value = _uiState.value.copy(snoozeDurationMinutes = minutesInt)
         // Save immediately
         viewModelScope.launch {
