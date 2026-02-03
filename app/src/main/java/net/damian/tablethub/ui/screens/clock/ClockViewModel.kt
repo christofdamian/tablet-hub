@@ -63,20 +63,37 @@ class ClockViewModel @Inject constructor(
                 )
             }
         }
-        // Periodically update alarm countdown (every 60 seconds)
+        // Periodically update alarm countdown with dynamic frequency:
+        // - Every 1 minute when alarm is within 15 minutes (for sunrise alarm effect)
+        // - Every 5 minutes otherwise (battery optimization)
         viewModelScope.launch {
             while (true) {
-                delay(60_000)
                 val enabledAlarms = alarmRepository.getEnabledAlarms().first()
                 val nextAlarmInfo = calculateNextAlarmInfo(enabledAlarms)
                 val minutesUntil = nextAlarmInfo?.let { (alarm, daysUntil) ->
                     calculateMinutesUntil(alarm, daysUntil)
                 }
+
+                // Choose delay based on proximity to next alarm
+                val delayMs = when {
+                    minutesUntil != null && minutesUntil <= 15 -> 60_000L  // 1 minute for sunrise
+                    minutesUntil != null -> 300_000L  // 5 minutes when alarm exists
+                    else -> 300_000L  // 5 minutes when no alarm
+                }
+
+                delay(delayMs)
+
+                // Re-fetch after delay to get current state
+                val updatedAlarms = alarmRepository.getEnabledAlarms().first()
+                val updatedAlarmInfo = calculateNextAlarmInfo(updatedAlarms)
+                val updatedMinutesUntil = updatedAlarmInfo?.let { (alarm, daysUntil) ->
+                    calculateMinutesUntil(alarm, daysUntil)
+                }
                 haStatePublisher.updateNextAlarm(
-                    alarmTime = nextAlarmInfo?.first?.getTimeString(),
-                    alarmLabel = nextAlarmInfo?.first?.label,
-                    alarmId = nextAlarmInfo?.first?.id,
-                    minutesUntil = minutesUntil
+                    alarmTime = updatedAlarmInfo?.first?.getTimeString(),
+                    alarmLabel = updatedAlarmInfo?.first?.label,
+                    alarmId = updatedAlarmInfo?.first?.id,
+                    minutesUntil = updatedMinutesUntil
                 )
             }
         }

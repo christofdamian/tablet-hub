@@ -48,8 +48,7 @@ class MainActivity : ComponentActivity() {
         // Start MQTT service
         MqttService.start(this)
 
-        // Start light sensor
-        lightSensorService.startListening()
+        // Light sensor is managed by LightSensorService based on auto-sensing state
 
         setContent {
             val nightModeState by nightModeManager.nightModeState.collectAsState()
@@ -90,16 +89,16 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        lightSensorService.startListening()
+        lightSensorService.onActivityResumed()
     }
 
     override fun onPause() {
         super.onPause()
-        lightSensorService.stopListening()
+        lightSensorService.onActivityPaused()
     }
 
     override fun onDestroy() {
-        lightSensorService.stopListening()
+        lightSensorService.onActivityPaused()
         colorTemperatureManager.clearActivity()
         ScreenManager.clearActivity()
         super.onDestroy()
