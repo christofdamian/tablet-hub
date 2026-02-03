@@ -221,6 +221,10 @@ Replace `weather.home_2` with your weather entity ID (find it in Developer Tools
 
 **Night Mode** dims the screen to a low brightness level (default 5/255) for bedside use. When disabled, the previous brightness is automatically restored.
 
+**Auto Night Mode** uses the ambient light sensor to automatically enter night mode when the room gets dark. Configure the lux threshold in Settings.
+
+**Wake Timer** - When auto night mode is active and you tap the screen to wake the tablet, it stays awake for a configurable duration (default 30 seconds). Each touch resets the timer, so the screen stays on while you're using it. After inactivity, night mode automatically returns.
+
 **Color Temperature** adds an amber overlay to reduce blue light, similar to "Night Light" or "Night Shift" features. Values range from 0 (neutral) to 100 (warm amber).
 
 **Bedtime automation example:**

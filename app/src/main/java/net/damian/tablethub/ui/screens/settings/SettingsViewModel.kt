@@ -164,6 +164,13 @@ class SettingsViewModel @Inject constructor(
         )
     }
 
+    fun updateNightModeWakeDuration(seconds: Int) {
+        val secondsInt = seconds.coerceIn(5, 300)
+        _uiState.value = _uiState.value.copy(
+            nightModeConfig = _uiState.value.nightModeConfig.copy(wakeDurationSeconds = secondsInt)
+        )
+    }
+
     /**
      * Calibrate the lux threshold using the current ambient light reading.
      * Sets the threshold to the current lux value.

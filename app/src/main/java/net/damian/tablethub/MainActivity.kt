@@ -1,6 +1,7 @@
 package net.damian.tablethub
 
 import android.os.Bundle
+import android.view.MotionEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -85,6 +86,14 @@ class MainActivity : ComponentActivity() {
 
         // Initialize color temperature overlay after setContent
         colorTemperatureManager.setActivity(this)
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
+        // Reset wake timer on any touch to extend the wake period
+        if (ev?.action == MotionEvent.ACTION_DOWN) {
+            nightModeManager.onUserInteraction()
+        }
+        return super.dispatchTouchEvent(ev)
     }
 
     override fun onResume() {

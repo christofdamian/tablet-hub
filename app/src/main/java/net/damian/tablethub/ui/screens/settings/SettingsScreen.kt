@@ -325,6 +325,24 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Wake Duration: ${uiState.nightModeConfig.wakeDurationSeconds} seconds",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Slider(
+                    value = uiState.nightModeConfig.wakeDurationSeconds.toFloat(),
+                    onValueChange = { viewModel.updateNightModeWakeDuration(it.toInt()) },
+                    valueRange = 5f..300f,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text(
+                    text = "How long to stay awake after tapping the night clock",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
             // Alarm Section

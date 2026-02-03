@@ -40,6 +40,7 @@ class SettingsDataStore @Inject constructor(
     private val nightModeLuxHysteresisKey = intPreferencesKey("night_mode_lux_hysteresis")
     private val nightModeBrightnessKey = intPreferencesKey("night_mode_brightness")
     private val nightModeDimOverlayKey = intPreferencesKey("night_mode_dim_overlay")
+    private val nightModeWakeDurationKey = intPreferencesKey("night_mode_wake_duration_seconds")
 
     // Weather Settings
     private val weatherEnabledKey = booleanPreferencesKey("weather_enabled")
@@ -78,7 +79,8 @@ class SettingsDataStore @Inject constructor(
             luxThreshold = preferences[nightModeLuxThresholdKey] ?: 15,
             luxHysteresis = preferences[nightModeLuxHysteresisKey] ?: 5,
             nightBrightness = preferences[nightModeBrightnessKey] ?: 5,
-            dimOverlay = preferences[nightModeDimOverlayKey] ?: 0
+            dimOverlay = preferences[nightModeDimOverlayKey] ?: 0,
+            wakeDurationSeconds = preferences[nightModeWakeDurationKey] ?: 30
         )
     }
 
@@ -143,6 +145,7 @@ class SettingsDataStore @Inject constructor(
             preferences[nightModeLuxHysteresisKey] = config.luxHysteresis
             preferences[nightModeBrightnessKey] = config.nightBrightness
             preferences[nightModeDimOverlayKey] = config.dimOverlay
+            preferences[nightModeWakeDurationKey] = config.wakeDurationSeconds
         }
     }
 
@@ -189,7 +192,8 @@ data class NightModeConfig(
     val luxThreshold: Int = 15,
     val luxHysteresis: Int = 5,
     val nightBrightness: Int = 5,
-    val dimOverlay: Int = 0  // Extra dim overlay percentage (0-90)
+    val dimOverlay: Int = 0,  // Extra dim overlay percentage (0-90)
+    val wakeDurationSeconds: Int = 30  // How long to stay awake after tapping night clock
 )
 
 data class WeatherConfig(

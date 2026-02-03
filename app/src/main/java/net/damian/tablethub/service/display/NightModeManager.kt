@@ -5,7 +5,9 @@ import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,6 +33,7 @@ class NightModeManager @Inject constructor(
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var wakeTimerJob: Job? = null
 
     private val _nightModeState = MutableStateFlow(NightModeState())
     val nightModeState: StateFlow<NightModeState> = _nightModeState.asStateFlow()
@@ -55,7 +58,8 @@ class NightModeManager @Inject constructor(
                             luxThreshold = config.luxThreshold.toFloat(),
                             luxHysteresis = config.luxHysteresis.toFloat(),
                             nightBrightness = config.nightBrightness,
-                            dimOverlay = config.dimOverlay
+                            dimOverlay = config.dimOverlay,
+                            wakeDurationSeconds = config.wakeDurationSeconds
                         )
                     } else {
                         // Subsequent updates: only update config values, not manual state
@@ -65,7 +69,8 @@ class NightModeManager @Inject constructor(
                             luxThreshold = config.luxThreshold.toFloat(),
                             luxHysteresis = config.luxHysteresis.toFloat(),
                             nightBrightness = config.nightBrightness,
-                            dimOverlay = config.dimOverlay
+                            dimOverlay = config.dimOverlay,
+                            wakeDurationSeconds = config.wakeDurationSeconds
                         )
                     }
                 }
@@ -121,30 +126,88 @@ class NightModeManager @Inject constructor(
 
     /**
      * Toggle night mode (for UI button).
-     * If currently active (by any means), turn off manual mode.
+     * If currently active due to auto-sensing, start a wake timer to temporarily
+     * suppress night mode. After the timer expires, auto-sensing resumes.
+     * If manually enabled, just turn it off.
      * If not active, turn on manual mode.
      */
     fun toggleNightMode() {
         val currentState = _nightModeState.value
-        val newManualEnabled = !currentState.isActive
-        setManualNightMode(newManualEnabled)
+        if (currentState.isActive) {
+            // Exiting night mode
+            if (currentState.isManualEnabled) {
+                // Was manually enabled, just turn it off
+                setManualNightMode(false)
+            } else if (currentState.isAutoEnabled) {
+                // Was auto-enabled, start wake timer
+                startWakeTimer()
+            }
+        } else {
+            // Entering night mode - cancel any wake timer and enable manual mode
+            cancelWakeTimer()
+            setManualNightMode(true)
+        }
+    }
+
+    /**
+     * Start a temporary wake timer that suppresses auto night mode.
+     * After the timer expires, auto-sensing can re-enable night mode.
+     */
+    private fun startWakeTimer() {
+        wakeTimerJob?.cancel()
+        val durationSeconds = _nightModeState.value.wakeDurationSeconds
+        Log.d(TAG, "Starting wake timer for $durationSeconds seconds")
+        _nightModeState.update { it.copy(isWakeTimerActive = true) }
+        updateActiveState()
+
+        wakeTimerJob = scope.launch {
+            delay(durationSeconds * 1000L)
+            Log.d(TAG, "Wake timer expired")
+            _nightModeState.update { it.copy(isWakeTimerActive = false) }
+            updateActiveState()
+        }
+    }
+
+    /**
+     * Cancel the wake timer if active.
+     */
+    private fun cancelWakeTimer() {
+        if (wakeTimerJob?.isActive == true) {
+            Log.d(TAG, "Cancelling wake timer")
+            wakeTimerJob?.cancel()
+            _nightModeState.update { it.copy(isWakeTimerActive = false) }
+        }
+    }
+
+    /**
+     * Reset the wake timer on user interaction.
+     * Called when user touches the screen while wake timer is active.
+     */
+    fun onUserInteraction() {
+        if (_nightModeState.value.isWakeTimerActive) {
+            Log.d(TAG, "User interaction - resetting wake timer")
+            startWakeTimer()
+        }
     }
 
     /**
      * Update the isActive state based on manual and auto settings.
      * Manual mode takes priority over auto sensing.
+     * Wake timer temporarily suppresses auto night mode.
      */
     private fun updateActiveState() {
         val state = _nightModeState.value
         val wasActive = state.isActive
+        val exitThreshold = state.luxThreshold + state.luxHysteresis
 
         val shouldBeActive = when {
             // Manual mode takes priority
             state.isManualEnabled -> true
+            // Wake timer suppresses auto night mode temporarily
+            state.isWakeTimerActive -> false
             // Auto mode with hysteresis
             state.isAutoEnabled -> {
                 val enterThreshold = state.luxThreshold
-                val exitThreshold = state.luxThreshold + state.luxHysteresis
 
                 when {
                     // Currently active, exit when above exit threshold
@@ -197,5 +260,7 @@ data class NightModeState(
     val luxHysteresis: Float = 5f,
     val nightBrightness: Int = 5,
     val dimOverlay: Int = 0,  // Extra dim overlay percentage (0-90)
-    val preNightBrightness: Int? = null  // Brightness level before entering night mode
+    val preNightBrightness: Int? = null,  // Brightness level before entering night mode
+    val isWakeTimerActive: Boolean = false,  // Temporary wake timer suppresses auto night mode
+    val wakeDurationSeconds: Int = 30  // How long to stay awake after tapping night clock
 )
