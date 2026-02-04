@@ -227,19 +227,15 @@ class NightModeManager @Inject constructor(
             Log.d(TAG, "Night mode active changed: $shouldBeActive (lux=${state.currentLux})")
 
             if (shouldBeActive) {
-                // Entering night mode - store current brightness first, then apply night brightness
-                val currentBrightness = ScreenManager.getBrightness()
-                _nightModeState.update { it.copy(isActive = true, preNightBrightness = currentBrightness) }
+                // Entering night mode - apply night brightness
+                _nightModeState.update { it.copy(isActive = true) }
                 ScreenManager.setBrightness(state.nightBrightness)
-                Log.d(TAG, "Saved pre-night brightness: $currentBrightness, set night brightness: ${state.nightBrightness}")
+                Log.d(TAG, "Set night brightness: ${state.nightBrightness}")
             } else {
-                // Exiting night mode - restore brightness
-                val savedBrightness = state.preNightBrightness
-                _nightModeState.update { it.copy(isActive = false, preNightBrightness = null) }
-                savedBrightness?.let {
-                    ScreenManager.setBrightness(it)
-                    Log.d(TAG, "Restored pre-night brightness: $it")
-                }
+                // Exiting night mode - restore to system default brightness
+                _nightModeState.update { it.copy(isActive = false) }
+                ScreenManager.setBrightness(-1)
+                Log.d(TAG, "Restored system default brightness")
             }
 
             // Notify HA
@@ -260,7 +256,6 @@ data class NightModeState(
     val luxHysteresis: Float = 5f,
     val nightBrightness: Int = 5,
     val dimOverlay: Int = 0,  // Extra dim overlay percentage (0-90)
-    val preNightBrightness: Int? = null,  // Brightness level before entering night mode
     val isWakeTimerActive: Boolean = false,  // Temporary wake timer suppresses auto night mode
     val wakeDurationSeconds: Int = 30  // How long to stay awake after tapping night clock
 )

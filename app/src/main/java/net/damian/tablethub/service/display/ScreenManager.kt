@@ -11,12 +11,14 @@ import java.lang.ref.WeakReference
 object ScreenManager {
 
     private var activityRef: WeakReference<Activity>? = null
-    private var currentBrightness: Int = 255
+    private var currentBrightness: Int = -1  // -1 = system default
 
     fun setActivity(activity: Activity) {
         activityRef = WeakReference(activity)
         // Keep screen on
         activity.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        // Use system brightness by default (allows Android settings and ambient light sensor to work)
+        setBrightness(-1)
     }
 
     fun clearActivity() {
