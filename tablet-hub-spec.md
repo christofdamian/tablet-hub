@@ -185,6 +185,27 @@ automation:
           transition: 300
 ```
 
+### Alarm Snooze Event
+
+When alarm is snoozed, publish event:
+```json
+{
+  "event_type": "tablethub_alarm_snoozed",
+  "alarm_id": "1",
+  "snooze_minutes": 9
+}
+```
+
+### Alarm Dismiss Event
+
+When alarm is dismissed, publish event:
+```json
+{
+  "event_type": "tablethub_alarm_dismissed",
+  "alarm_id": "1"
+}
+```
+
 ## Display & Dimming
 
 ### Auto-Dimming

@@ -113,6 +113,9 @@ class AlarmService : Service() {
             ACTION_STOP_ALARM -> {
                 stopAlarm()
                 haStatePublisher.updateAlarmRinging(false)
+                if (currentAlarmId != -1L) {
+                    haStatePublisher.publishDismissEvent(currentAlarmId)
+                }
                 stopSelf()
             }
 

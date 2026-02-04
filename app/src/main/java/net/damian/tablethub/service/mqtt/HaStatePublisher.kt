@@ -231,6 +231,30 @@ class HaStatePublisher @Inject constructor(
     }
 
     /**
+     * Publish dismiss event for Home Assistant automations.
+     * HA can use this to turn off lights, stop music, etc.
+     */
+    fun publishDismissEvent(alarmId: Long) {
+        scope.launch {
+            try {
+                deviceId = settingsDataStore.deviceId.first()
+                val event = DismissEvent(
+                    eventType = "tablethub_alarm_dismissed",
+                    alarmId = alarmId.toString()
+                )
+                val adapter = moshi.adapter(DismissEvent::class.java)
+                val json = adapter.toJson(event)
+
+                // Publish event (not retained - events are transient)
+                mqttManager.publish(eventTopic, json, qos = 1, retained = false)
+                Log.d(TAG, "Published dismiss event: $json")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to publish dismiss event", e)
+            }
+        }
+    }
+
+    /**
      * Force refresh all state values and publish.
      */
     fun refreshAndPublish() {
@@ -293,4 +317,14 @@ data class SnoozeEvent(
     @com.squareup.moshi.Json(name = "event_type") val eventType: String,
     @com.squareup.moshi.Json(name = "alarm_id") val alarmId: String,
     @com.squareup.moshi.Json(name = "snooze_minutes") val snoozeMinutes: Int
+)
+
+/**
+ * Dismiss event published to MQTT for HA automations.
+ * HA can use this to turn off lights, stop music, etc.
+ */
+@com.squareup.moshi.JsonClass(generateAdapter = true)
+data class DismissEvent(
+    @com.squareup.moshi.Json(name = "event_type") val eventType: String,
+    @com.squareup.moshi.Json(name = "alarm_id") val alarmId: String
 )

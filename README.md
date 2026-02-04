@@ -281,6 +281,14 @@ When disabled:
 }
 ```
 
+**Dismiss event:** When alarm is dismissed, publishes to `tablethub/{device_id}/event`:
+```json
+{
+  "event_type": "tablethub_alarm_dismissed",
+  "alarm_id": "1"
+}
+```
+
 **Full HA wake-up automation example:**
 ```yaml
 automation:
