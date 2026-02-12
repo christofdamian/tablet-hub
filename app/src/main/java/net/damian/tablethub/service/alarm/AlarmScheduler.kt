@@ -28,6 +28,48 @@ class AlarmScheduler @Inject constructor(
         private const val PRE_ALARM_REQUEST_CODE_OFFSET = 100000
         // Use a different request code range for snooze alarms
         private const val SNOOZE_REQUEST_CODE_OFFSET = 200000
+
+        internal fun calculateNextTriggerTime(alarm: AlarmEntity): LocalDateTime? {
+            val now = LocalDateTime.now()
+            val alarmTime = LocalTime.of(alarm.hour, alarm.minute)
+
+            if (!alarm.isRepeating) {
+                val todayAlarm = LocalDateTime.of(LocalDate.now(), alarmTime)
+                return if (todayAlarm.isAfter(now)) {
+                    todayAlarm
+                } else {
+                    todayAlarm.plusDays(1)
+                }
+            }
+
+            for (dayOffset in 0..7) {
+                val targetDate = LocalDate.now().plusDays(dayOffset.toLong())
+                val targetDateTime = LocalDateTime.of(targetDate, alarmTime)
+
+                if (targetDateTime.isBefore(now) || targetDateTime.isEqual(now)) {
+                    continue
+                }
+
+                val dayOfWeek = targetDate.dayOfWeek
+                if (isDayActive(alarm, dayOfWeek)) {
+                    return targetDateTime
+                }
+            }
+
+            return null
+        }
+
+        private fun isDayActive(alarm: AlarmEntity, dayOfWeek: DayOfWeek): Boolean {
+            return when (dayOfWeek) {
+                DayOfWeek.MONDAY -> alarm.monday
+                DayOfWeek.TUESDAY -> alarm.tuesday
+                DayOfWeek.WEDNESDAY -> alarm.wednesday
+                DayOfWeek.THURSDAY -> alarm.thursday
+                DayOfWeek.FRIDAY -> alarm.friday
+                DayOfWeek.SATURDAY -> alarm.saturday
+                DayOfWeek.SUNDAY -> alarm.sunday
+            }
+        }
     }
 
     private val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
@@ -211,47 +253,4 @@ class AlarmScheduler @Inject constructor(
         }
     }
 
-    private fun calculateNextTriggerTime(alarm: AlarmEntity): LocalDateTime? {
-        val now = LocalDateTime.now()
-        val alarmTime = LocalTime.of(alarm.hour, alarm.minute)
-
-        if (!alarm.isRepeating) {
-            // One-time alarm
-            val todayAlarm = LocalDateTime.of(LocalDate.now(), alarmTime)
-            return if (todayAlarm.isAfter(now)) {
-                todayAlarm
-            } else {
-                todayAlarm.plusDays(1)
-            }
-        }
-
-        // Repeating alarm - find next active day
-        for (dayOffset in 0..7) {
-            val targetDate = LocalDate.now().plusDays(dayOffset.toLong())
-            val targetDateTime = LocalDateTime.of(targetDate, alarmTime)
-
-            if (targetDateTime.isBefore(now) || targetDateTime.isEqual(now)) {
-                continue
-            }
-
-            val dayOfWeek = targetDate.dayOfWeek
-            if (isDayActive(alarm, dayOfWeek)) {
-                return targetDateTime
-            }
-        }
-
-        return null
-    }
-
-    private fun isDayActive(alarm: AlarmEntity, dayOfWeek: DayOfWeek): Boolean {
-        return when (dayOfWeek) {
-            DayOfWeek.MONDAY -> alarm.monday
-            DayOfWeek.TUESDAY -> alarm.tuesday
-            DayOfWeek.WEDNESDAY -> alarm.wednesday
-            DayOfWeek.THURSDAY -> alarm.thursday
-            DayOfWeek.FRIDAY -> alarm.friday
-            DayOfWeek.SATURDAY -> alarm.saturday
-            DayOfWeek.SUNDAY -> alarm.sunday
-        }
-    }
 }

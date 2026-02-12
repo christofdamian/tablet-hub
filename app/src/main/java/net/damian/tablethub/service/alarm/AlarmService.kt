@@ -27,6 +27,7 @@ import kotlinx.coroutines.runBlocking
 import net.damian.tablethub.AlarmFiringActivity
 import net.damian.tablethub.R
 import net.damian.tablethub.data.preferences.SettingsDataStore
+import net.damian.tablethub.data.repository.AlarmRepository
 import net.damian.tablethub.plex.PlexRepository
 import net.damian.tablethub.service.mqtt.HaStatePublisher
 import net.damian.tablethub.service.music.PlaybackManager
@@ -62,6 +63,9 @@ class AlarmService : Service() {
 
     @Inject
     lateinit var alarmScheduler: AlarmScheduler
+
+    @Inject
+    lateinit var alarmRepository: AlarmRepository
 
     @Inject
     lateinit var snoozeManager: SnoozeManager
@@ -108,6 +112,20 @@ class AlarmService : Service() {
 
                 // Publish alarm ringing state to HA
                 haStatePublisher.updateAlarmRinging(true, alarmId)
+
+                // Reschedule repeating alarms for next occurrence, disable one-time alarms
+                serviceScope.launch {
+                    val alarm = alarmRepository.getAlarmById(alarmId)
+                    if (alarm != null) {
+                        if (alarm.isRepeating) {
+                            alarmScheduler.scheduleAlarm(alarm)
+                            Log.d(TAG, "Rescheduled repeating alarm $alarmId for next occurrence")
+                        } else {
+                            alarmRepository.setAlarmEnabled(alarmId, false)
+                            Log.d(TAG, "Disabled one-time alarm $alarmId after firing")
+                        }
+                    }
+                }
             }
 
             ACTION_STOP_ALARM -> {
